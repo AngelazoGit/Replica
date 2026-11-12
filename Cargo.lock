@@ -930,19 +930,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "farmbot"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "eframe",
- "image",
- "rdev",
- "serde",
- "serde_json",
- "xcap",
-]
-
-[[package]]
 name = "fax"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2651,6 +2638,19 @@ name = "renderdoc-sys"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
+
+[[package]]
+name = "replica"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "eframe",
+ "image",
+ "rdev",
+ "serde",
+ "serde_json",
+ "xcap",
+]
 
 [[package]]
 name = "rgb"

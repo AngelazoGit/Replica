@@ -1,4 +1,4 @@
-# FarmBot
+# Replica
 
 Bot en Rust que **graba lo que haces** (ratón + teclado), **mira tu pantalla** mientras lo haces
 y luego **repite la ruta por ti**: rutas de farmeo, tareas repetitivas en el trabajo, comandos de juego, lanzar programas…
@@ -44,6 +44,7 @@ sudo apt install libx11-dev libxtst-dev libxi-dev libdbus-1-dev libxkbcommon-x11
 | `src/bot.rs` | Escucha global, grabación, reproductor, atajos, humanización |
 | `src/vision.rs` | Captura de pantalla y búsqueda de plantillas (anclas) |
 | `src/app.rs` | Interfaz gráfica (egui) |
+| `src/theme.rs` | Estética: paleta "Sodio y Ultravioleta", efectos HUD |
 | `examples/drive.rs` | Prueba automática: simula F9 → acciones → F9 → F10 |
 
 ## Limitaciones y avisos
