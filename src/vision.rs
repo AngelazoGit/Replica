@@ -104,25 +104,27 @@ pub struct Match {
     pub score: f32,
 }
 
-/// Busca `template` en un área de ±`radius` px alrededor de `(cx, cy)`.
-pub fn find_near(template: &RgbaImage, cx: f64, cy: f64, radius: u32) -> anyhow::Result<Match> {
-    let (tw, th) = template.dimensions();
-    let ox = cx as i32 - (tw / 2) as i32 - radius as i32;
-    let oy = cy as i32 - (th / 2) as i32 - radius as i32;
-    let (area, ox, oy) = capture_region(ox, oy, tw + 2 * radius, th + 2 * radius)?;
-    // Posición donde estaba la plantilla al grabar (dentro del área capturada).
-    let ex = (cx as i32 - (tw / 2) as i32 - ox).max(0) as u32;
-    let ey = (cy as i32 - (th / 2) as i32 - oy).max(0) as u32;
-    let (bx, by, score) = best_match(
-        &image::imageops::grayscale(&area),
-        &image::imageops::grayscale(template),
-        (ex, ey),
-    );
-    Ok(Match {
-        x: (ox + bx as i32) as f64 + tw as f64 / 2.0,
-        y: (oy + by as i32) as f64 + th as f64 / 2.0,
-        score,
-    })
+/// Busca la plantilla que mejor encaja (p.ej. escalada y original) en un área de
+/// ±`radius` px alrededor de `(cx, cy)`. Una sola captura para todas.
+pub fn find_near(templates: &[GrayImage], cx: f64, cy: f64, radius: u32) -> anyhow::Result<Match> {
+    let tw = templates.iter().map(|t| t.width()).max().unwrap_or(0);
+    let th = templates.iter().map(|t| t.height()).max().unwrap_or(0);
+    let x0 = cx as i32 - (tw / 2) as i32 - radius as i32;
+    let y0 = cy as i32 - (th / 2) as i32 - radius as i32;
+    let (area, ox, oy) = capture_region(x0, y0, tw + 2 * radius, th + 2 * radius)?;
+    let area = image::imageops::grayscale(&area);
+    templates
+        .iter()
+        .map(|t| {
+            let (tw, th) = t.dimensions();
+            // Posición donde estaba la plantilla al grabar (dentro del área capturada).
+            let ex = (cx as i32 - (tw / 2) as i32 - ox).max(0) as u32;
+            let ey = (cy as i32 - (th / 2) as i32 - oy).max(0) as u32;
+            let (bx, by, score) = best_match(&area, t, (ex, ey));
+            Match { x: (ox + bx as i32) as f64 + tw as f64 / 2.0, y: (oy + by as i32) as f64 + th as f64 / 2.0, score }
+        })
+        .max_by(|a, b| a.score.total_cmp(&b.score))
+        .ok_or_else(|| anyhow::anyhow!("sin plantillas"))
 }
 
 /// Búsqueda por suma de diferencias absolutas (SAD) sobre escala de grises.

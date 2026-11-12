@@ -79,7 +79,10 @@ impl Route {
     pub fn save(&self) -> anyhow::Result<()> {
         let dir = Self::dir(&self.name);
         std::fs::create_dir_all(&dir)?;
-        std::fs::write(dir.join("route.json"), serde_json::to_string_pretty(self)?)?;
+        // Escribir aparte y renombrar: un cierre a mitad de escritura no corrompe la ruta.
+        let tmp = dir.join("route.json.tmp");
+        std::fs::write(&tmp, serde_json::to_string_pretty(self)?)?;
+        std::fs::rename(tmp, dir.join("route.json"))?;
         Ok(())
     }
 

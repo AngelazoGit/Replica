@@ -134,7 +134,8 @@ impl eframe::App for App {
         egui::TopBottomPanel::bottom("log").frame(panel_frame(VOID)).resizable(true).default_height(130.0).show(ctx, |ui| {
             theme::section(ui, "TERMINAL", UV);
             egui::ScrollArea::vertical().stick_to_bottom(true).auto_shrink(false).show(ui, |ui| {
-                for line in bot.state.lock().unwrap().log.iter() {
+                let log = bot.state.lock().unwrap().log.clone(); // no bloquear la escucha de entrada al dibujar
+                for line in log.iter() {
                     let low = line.to_lowercase();
                     let col = if low.contains("error") || low.contains("no se pudo") || line.starts_with('⏹') {
                         CORAL

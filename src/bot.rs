@@ -123,6 +123,9 @@ impl Bot {
         let b = bot.clone();
         thread::spawn(move || {
             for (x, y, path, frame) in rx {
+                if !path.parent().is_some_and(|d| d.exists()) {
+                    continue; // grabación vacía ya descartada (su carpeta se borró)
+                }
                 // Preferimos el fotograma de antes del clic; si no contiene el punto, captura en vivo.
                 let img = match frame.and_then(|f| vision::anchor_from_frame(&f, x, y)) {
                     Some(img) => Ok(img),
@@ -351,13 +354,14 @@ impl Bot {
                 thread::spawn(move || {
                     bot.log(format!("▶ Reproduciendo '{}' (F12 para parar).", route.name));
                     let mut player = Player::new(&bot, &route, &settings);
-                    let result = player.run();
+                    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| player.run()));
                     player.release_all();
                     match result {
-                        Ok(()) => bot.log("✔ Ruta completada."),
-                        Err(e) => bot.log(format!("⏹ {e}")),
+                        Ok(Ok(())) => bot.log("✔ Ruta completada."),
+                        Ok(Err(e)) => bot.log(format!("⏹ {e}")),
+                        Err(_) => bot.log("⏹ Error interno durante la reproducción."),
                     }
-                    let mut st = bot.state.lock().unwrap();
+                    let mut st = bot.state.lock().unwrap_or_else(|e| e.into_inner());
                     st.mode = Mode::Idle;
                     st.progress.clear();
                     drop(st);
@@ -483,12 +487,21 @@ impl<'a> Player<'a> {
         (self.rng % 20001) as f64 / 10000.0 - 1.0
     }
 
-    fn sleep(&mut self, ms: u64) -> anyhow::Result<()> {
+    /// Duración real de un retardo grabado (velocidad + humanización).
+    fn scaled(&mut self, ms: u64) -> Duration {
         let mut ms = ms as f64 / self.cfg.speed.max(0.05) as f64;
         if self.cfg.humanize && ms > 5.0 {
             ms *= 1.0 + 0.15 * self.rand();
         }
-        let end = Instant::now() + Duration::from_millis(ms as u64);
+        Duration::from_secs_f64(ms / 1000.0)
+    }
+
+    fn sleep(&mut self, ms: u64) -> anyhow::Result<()> {
+        let end = Instant::now() + self.scaled(ms);
+        self.sleep_until(end)
+    }
+
+    fn sleep_until(&self, end: Instant) -> anyhow::Result<()> {
         while Instant::now() < end {
             if self.bot.stopped() {
                 anyhow::bail!("Detenido por el usuario.");
@@ -512,10 +525,16 @@ impl<'a> Player<'a> {
             lap += 1;
             self.locate_window(lap == 1); // cada vuelta: la ventana puede haberse movido o redimensionado
             let total = if self.cfg.loops == 0 { "∞".to_string() } else { self.cfg.loops.to_string() };
+            let mut clock = Instant::now();
             for (i, step) in self.route.steps.iter().enumerate() {
                 self.bot.set_progress(format!("Vuelta {lap}/{total} · paso {}/{}", i + 1, self.route.steps.len()));
-                self.sleep(step.delay_ms)?;
+                clock += self.scaled(step.delay_ms);
+                self.sleep_until(clock)?;
                 self.exec(&step.action)?;
+                // Reloj absoluto: lo que tarda simular eventos no se acumula como retraso, pero tras
+                // una espera larga (ancla, Wait) no se disparan de golpe los pasos atrasados.
+                let catch_up = Instant::now().checked_sub(Duration::from_millis(50)).unwrap_or(clock);
+                clock = clock.max(catch_up);
             }
             self.release_all();
             if self.cfg.loops != 0 && lap >= self.cfg.loops {
@@ -645,6 +664,7 @@ impl<'a> Player<'a> {
         // Otra resolución: los juegos escalan su interfaz con la ventana y las apps de
         // escritorio no, así que se prueba el ancla escalada y la original.
         let (sx, sy) = self.scale();
+        let tpl = image::imageops::grayscale(&tpl);
         let mut tpls = vec![];
         if (sx - 1.0).abs() > 0.01 || (sy - 1.0).abs() > 0.01 {
             let w = ((tpl.width() as f64 * sx).round() as u32).max(4);
@@ -656,12 +676,7 @@ impl<'a> Player<'a> {
         let deadline = Instant::now() + Duration::from_millis(self.cfg.anchor_timeout_ms);
         let mut best = 0.0f32;
         loop {
-            let found = tpls
-                .iter()
-                .map(|t| vision::find_near(t, x, y, radius))
-                .collect::<anyhow::Result<Vec<_>>>()
-                .map(|ms| ms.into_iter().max_by(|a, b| a.score.total_cmp(&b.score)).unwrap());
-            match found {
+            match vision::find_near(&tpls, x, y, radius) {
                 Ok(m) if m.score >= self.cfg.threshold => {
                     if (m.x - x).abs() > 3.0 || (m.y - y).abs() > 3.0 {
                         self.bot.log(format!("Ancla desplazada: ({x:.0},{y:.0}) → ({:.0},{:.0}) [{:.2}]", m.x, m.y, m.score));

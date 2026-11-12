@@ -21,6 +21,15 @@ fn main() {
             s(ButtonPress(Button::Left)); s(ButtonRelease(Button::Left));
             s(KeyPress(Key::F9)); s(KeyRelease(Key::F9));
         }
+        // Muchos movimientos seguidos: la reproducción no debe acumular retraso.
+        "moves" => {
+            s(KeyPress(Key::F9)); s(KeyRelease(Key::F9));
+            for i in 0..150 {
+                simulate(&MouseMove { x: 200.0 + i as f64 * 4.0, y: 400.0 }).unwrap();
+                sleep(Duration::from_millis(20));
+            }
+            s(KeyPress(Key::F9)); s(KeyRelease(Key::F9));
+        }
         "play" => { s(KeyPress(Key::F10)); s(KeyRelease(Key::F10)); }
         _ => {}
     }
