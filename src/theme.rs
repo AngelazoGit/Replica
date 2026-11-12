@@ -1,7 +1,9 @@
 //! Estética de Replica: paleta "Sodio y Ultravioleta".
 //! Ámbar de farola de sodio + violeta UV + verde fósforo sobre negro tintado.
 
-use eframe::egui::{self, Color32, FontFamily, FontId, Rect, Rounding, Stroke, TextStyle, Ui, Vec2};
+use eframe::egui::{
+    self, Color32, FontFamily, FontId, Rect, Rounding, Stroke, TextStyle, Ui, Vec2,
+};
 
 pub const VOID: Color32 = Color32::from_rgb(0x0A, 0x09, 0x10);
 pub const PANEL: Color32 = Color32::from_rgb(0x11, 0x0F, 0x1A);
@@ -19,8 +21,14 @@ pub fn apply(ctx: &egui::Context) {
     style.text_styles = [
         (TextStyle::Heading, FontId::new(17.0, FontFamily::Monospace)),
         (TextStyle::Body, FontId::new(13.5, FontFamily::Proportional)),
-        (TextStyle::Button, FontId::new(13.5, FontFamily::Proportional)),
-        (TextStyle::Monospace, FontId::new(12.5, FontFamily::Monospace)),
+        (
+            TextStyle::Button,
+            FontId::new(13.5, FontFamily::Proportional),
+        ),
+        (
+            TextStyle::Monospace,
+            FontId::new(12.5, FontFamily::Monospace),
+        ),
         (TextStyle::Small, FontId::new(10.5, FontFamily::Monospace)),
     ]
     .into();
@@ -64,7 +72,13 @@ pub fn apply(ctx: &egui::Context) {
     w.active.bg_stroke = Stroke::new(1.5_f32, SODIUM);
     w.active.fg_stroke = Stroke::new(2.0_f32, SODIUM);
     w.open = w.active;
-    for wv in [&mut w.noninteractive, &mut w.inactive, &mut w.hovered, &mut w.active, &mut w.open] {
+    for wv in [
+        &mut w.noninteractive,
+        &mut w.inactive,
+        &mut w.hovered,
+        &mut w.active,
+        &mut w.open,
+    ] {
         wv.rounding = Rounding::ZERO;
         wv.expansion = 0.0;
     }
@@ -80,7 +94,8 @@ pub fn section(ui: &mut Ui, title: &str, color: Color32) {
         ui.label(egui::RichText::new(title).monospace().color(color).strong());
         let rest = ui.available_rect_before_wrap();
         let y = rest.center().y;
-        ui.painter().hline(rest.left()..=rest.right(), y, Stroke::new(1.0_f32, LINE));
+        ui.painter()
+            .hline(rest.left()..=rest.right(), y, Stroke::new(1.0_f32, LINE));
     });
     ui.add_space(2.0);
 }
@@ -88,16 +103,32 @@ pub fn section(ui: &mut Ui, title: &str, color: Color32) {
 /// Texto con aberración cromática (efecto glitch): copias desplazadas en UV y coral.
 pub fn glitch_title(ui: &mut Ui, text: &str, size: f32) {
     let font = FontId::new(size, FontFamily::Monospace);
-    let galley = ui.painter().layout_no_wrap(text.to_owned(), font.clone(), SODIUM);
-    let (rect, _) = ui.allocate_exact_size(galley.size() + Vec2::new(4.0, 0.0), egui::Sense::hover());
+    let galley = ui
+        .painter()
+        .layout_no_wrap(text.to_owned(), font.clone(), SODIUM);
+    let (rect, _) =
+        ui.allocate_exact_size(galley.size() + Vec2::new(4.0, 0.0), egui::Sense::hover());
     let t = ui.input(|i| i.time);
     // Desplazamiento que "tiembla" de vez en cuando.
     let jitter = if (t * 1.7).fract() < 0.06 { 3.0 } else { 1.5 };
     let p = ui.painter();
-    p.text(rect.min + Vec2::new(-jitter, 0.0), egui::Align2::LEFT_TOP, text, font.clone(), UV.gamma_multiply(0.8));
-    p.text(rect.min + Vec2::new(jitter, 0.5), egui::Align2::LEFT_TOP, text, font.clone(), CORAL.gamma_multiply(0.6));
+    p.text(
+        rect.min + Vec2::new(-jitter, 0.0),
+        egui::Align2::LEFT_TOP,
+        text,
+        font.clone(),
+        UV.gamma_multiply(0.8),
+    );
+    p.text(
+        rect.min + Vec2::new(jitter, 0.5),
+        egui::Align2::LEFT_TOP,
+        text,
+        font.clone(),
+        CORAL.gamma_multiply(0.6),
+    );
     p.text(rect.min, egui::Align2::LEFT_TOP, text, font, SODIUM);
-    ui.ctx().request_repaint_after(std::time::Duration::from_millis(120));
+    ui.ctx()
+        .request_repaint_after(std::time::Duration::from_millis(120));
 }
 
 /// Fondo del panel central: rejilla tenue, líneas de barrido y esquinas de "visor".

@@ -1,6 +1,6 @@
 //! Interfaz gráfica (egui) con la estética de Replica.
 
-use crate::bot::{simplify_moves, Bot, MissingAnchor, Mode};
+use crate::bot::{Bot, MissingAnchor, Mode, simplify_moves};
 use crate::model::{Action, Route, Step, Target};
 use crate::theme::{self, BONE, CORAL, DIM, LINE, PANEL_HI, PHOSPHOR, SODIUM, UV, VOID};
 use eframe::egui::{self, Color32, Margin, RichText, Rounding, Stroke};
@@ -34,7 +34,11 @@ impl App {
         }
     }
 
-    fn anchor_texture(&mut self, ctx: &egui::Context, path: std::path::PathBuf) -> Option<egui::TextureHandle> {
+    fn anchor_texture(
+        &mut self,
+        ctx: &egui::Context,
+        path: std::path::PathBuf,
+    ) -> Option<egui::TextureHandle> {
         if let Some(tex) = self.textures.get(&path) {
             return Some(tex.clone());
         }
@@ -62,7 +66,10 @@ fn tag(a: &Action) -> (&'static str, Color32) {
 }
 
 fn panel_frame(fill: Color32) -> egui::Frame {
-    egui::Frame::none().fill(fill).inner_margin(Margin::symmetric(12.0, 8.0)).stroke(Stroke::new(1.0_f32, LINE))
+    egui::Frame::none()
+        .fill(fill)
+        .inner_margin(Margin::symmetric(12.0, 8.0))
+        .stroke(Stroke::new(1.0_f32, LINE))
 }
 
 impl eframe::App for App {
@@ -78,137 +85,230 @@ impl eframe::App for App {
         let t = ctx.input(|i| i.time);
 
         // ── Cabecera: logo + estado + controles ──
-        egui::TopBottomPanel::top("controls").frame(panel_frame(VOID)).show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                theme::glitch_title(ui, "REPLICA", 26.0);
-                ui.vertical(|ui| {
-                    ui.add_space(4.0);
-                    ui.label(RichText::new("// motor de réplica de rutas").small().color(DIM));
-                    ui.label(RichText::new("v0.1 · F9 grabar · F10 reproducir · F12 cortar").small().color(DIM));
-                });
+        egui::TopBottomPanel::top("controls")
+            .frame(panel_frame(VOID))
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    theme::glitch_title(ui, "REPLICA", 26.0);
+                    ui.vertical(|ui| {
+                        ui.add_space(4.0);
+                        ui.label(
+                            RichText::new("// motor de réplica de rutas")
+                                .small()
+                                .color(DIM),
+                        );
+                        ui.label(
+                            RichText::new("v0.1 · F9 grabar · F10 reproducir · F12 cortar")
+                                .small()
+                                .color(DIM),
+                        );
+                    });
 
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    // Chip de estado, parpadea al grabar.
-                    let (txt, col) = match mode {
-                        Mode::Idle => ("STANDBY", DIM),
-                        Mode::Recording => ("● REC", CORAL),
-                        Mode::Playing => ("▶ RUN", PHOSPHOR),
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        // Chip de estado, parpadea al grabar.
+                        let (txt, col) = match mode {
+                            Mode::Idle => ("STANDBY", DIM),
+                            Mode::Recording => ("● REC", CORAL),
+                            Mode::Playing => ("▶ RUN", PHOSPHOR),
+                        };
+                        let alpha = if mode == Mode::Recording {
+                            0.55 + 0.45 * (t * 4.0).sin().abs() as f32
+                        } else {
+                            1.0
+                        };
+                        egui::Frame::none()
+                            .stroke(Stroke::new(1.0_f32, col.gamma_multiply(alpha)))
+                            .fill(col.gamma_multiply(0.08))
+                            .inner_margin(Margin::symmetric(12.0, 5.0))
+                            .show(ui, |ui| {
+                                ui.label(
+                                    RichText::new(txt)
+                                        .monospace()
+                                        .strong()
+                                        .size(15.0)
+                                        .color(col.gamma_multiply(alpha)),
+                                );
+                            });
+                        if mode != Mode::Idle {
+                            ctx.request_repaint_after(std::time::Duration::from_millis(50));
+                        }
+                    });
+                });
+                ui.add_space(6.0);
+                ui.horizontal(|ui| {
+                    let rec_label = if mode == Mode::Recording {
+                        "⏹ DETENER GRABACIÓN  F9"
+                    } else {
+                        "⏺ GRABAR  F9"
                     };
-                    let alpha = if mode == Mode::Recording { 0.55 + 0.45 * (t * 4.0).sin().abs() as f32 } else { 1.0 };
-                    egui::Frame::none()
-                        .stroke(Stroke::new(1.0_f32, col.gamma_multiply(alpha)))
-                        .fill(col.gamma_multiply(0.08))
-                        .inner_margin(Margin::symmetric(12.0, 5.0))
-                        .show(ui, |ui| {
-                            ui.label(RichText::new(txt).monospace().strong().size(15.0).color(col.gamma_multiply(alpha)));
-                        });
-                    if mode != Mode::Idle {
-                        ctx.request_repaint_after(std::time::Duration::from_millis(50));
+                    if ui
+                        .add_enabled(mode != Mode::Playing, theme::neon_button(rec_label, CORAL))
+                        .clicked()
+                    {
+                        bot.toggle_record(true);
+                        self.routes = Route::list();
+                    }
+                    let play_label = if mode == Mode::Playing {
+                        "⏹ PARAR  F10"
+                    } else {
+                        "▶ REPRODUCIR  F10"
+                    };
+                    if ui
+                        .add_enabled(
+                            mode != Mode::Recording,
+                            theme::neon_button(play_label, PHOSPHOR),
+                        )
+                        .clicked()
+                    {
+                        bot.toggle_play();
+                    }
+                    let stop = egui::Button::new(
+                        RichText::new("✋ CORTE DE EMERGENCIA  F12")
+                            .color(VOID)
+                            .strong(),
+                    )
+                    .fill(CORAL);
+                    if ui.add(stop).clicked() {
+                        bot.stop_all();
+                    }
+                    let progress = bot.state.lock().unwrap().progress.clone();
+                    if !progress.is_empty() {
+                        ui.label(
+                            RichText::new(format!("» {progress}"))
+                                .monospace()
+                                .color(SODIUM),
+                        );
                     }
                 });
+                ui.add_space(2.0);
             });
-            ui.add_space(6.0);
-            ui.horizontal(|ui| {
-                let rec_label = if mode == Mode::Recording { "⏹ DETENER GRABACIÓN  F9" } else { "⏺ GRABAR  F9" };
-                if ui.add_enabled(mode != Mode::Playing, theme::neon_button(rec_label, CORAL)).clicked() {
-                    bot.toggle_record(true);
-                    self.routes = Route::list();
-                }
-                let play_label = if mode == Mode::Playing { "⏹ PARAR  F10" } else { "▶ REPRODUCIR  F10" };
-                if ui.add_enabled(mode != Mode::Recording, theme::neon_button(play_label, PHOSPHOR)).clicked() {
-                    bot.toggle_play();
-                }
-                let stop = egui::Button::new(RichText::new("✋ CORTE DE EMERGENCIA  F12").color(VOID).strong()).fill(CORAL);
-                if ui.add(stop).clicked() {
-                    bot.stop_all();
-                }
-                let progress = bot.state.lock().unwrap().progress.clone();
-                if !progress.is_empty() {
-                    ui.label(RichText::new(format!("» {progress}")).monospace().color(SODIUM));
-                }
-            });
-            ui.add_space(2.0);
-        });
 
         // ── Terminal inferior ──
-        egui::TopBottomPanel::bottom("log").frame(panel_frame(VOID)).resizable(true).default_height(130.0).show(ctx, |ui| {
-            theme::section(ui, "TERMINAL", UV);
-            egui::ScrollArea::vertical().stick_to_bottom(true).auto_shrink(false).show(ui, |ui| {
-                let log = bot.state.lock().unwrap().log.clone(); // no bloquear la escucha de entrada al dibujar
-                for line in log.iter() {
-                    let low = line.to_lowercase();
-                    let col = if low.contains("error") || low.contains("no se pudo") || line.starts_with('⏹') {
-                        CORAL
-                    } else if line.starts_with('✔') || line.starts_with('▶') {
-                        PHOSPHOR
-                    } else if line.starts_with('●') || line.starts_with('■') || low.contains("ancla") {
-                        SODIUM
-                    } else {
-                        BONE.gamma_multiply(0.75)
-                    };
-                    ui.horizontal(|ui| {
-                        ui.label(RichText::new(">").monospace().color(UV));
-                        ui.label(RichText::new(line).monospace().color(col));
+        egui::TopBottomPanel::bottom("log")
+            .frame(panel_frame(VOID))
+            .resizable(true)
+            .default_height(130.0)
+            .show(ctx, |ui| {
+                theme::section(ui, "TERMINAL", UV);
+                egui::ScrollArea::vertical()
+                    .stick_to_bottom(true)
+                    .auto_shrink(false)
+                    .show(ui, |ui| {
+                        let log = bot.state.lock().unwrap().log.clone(); // no bloquear la escucha de entrada al dibujar
+                        for line in log.iter() {
+                            let low = line.to_lowercase();
+                            let col = if low.contains("error")
+                                || low.contains("no se pudo")
+                                || line.starts_with('⏹')
+                            {
+                                CORAL
+                            } else if line.starts_with('✔') || line.starts_with('▶') {
+                                PHOSPHOR
+                            } else if line.starts_with('●')
+                                || line.starts_with('■')
+                                || low.contains("ancla")
+                            {
+                                SODIUM
+                            } else {
+                                BONE.gamma_multiply(0.75)
+                            };
+                            ui.horizontal(|ui| {
+                                ui.label(RichText::new(">").monospace().color(UV));
+                                ui.label(RichText::new(line).monospace().color(col));
+                            });
+                        }
                     });
-                }
             });
-        });
 
         // ── Panel izquierdo: rutas + ajustes ──
-        egui::SidePanel::left("routes").frame(panel_frame(theme::PANEL)).default_width(280.0).show(ctx, |ui| {
-            theme::section(ui, "RUTAS", SODIUM);
-            ui.horizontal(|ui| {
-                ui.label(RichText::new("nombre").small().color(DIM));
-                ui.add(egui::TextEdit::singleline(&mut bot.state.lock().unwrap().record_name).text_color(SODIUM));
-            });
-            egui::ScrollArea::vertical().id_salt("rlist").max_height(150.0).show(ui, |ui| {
-                let current = bot.state.lock().unwrap().route.name.clone();
-                if self.routes.is_empty() {
-                    ui.label(RichText::new("sin rutas · pulsa F9 para grabar").small().color(DIM));
-                }
-                for name in self.routes.clone() {
-                    let sel = current == name;
-                    let text = RichText::new(format!("{} {name}", if sel { "▸" } else { " " }))
-                        .monospace()
-                        .color(if sel { SODIUM } else { BONE });
-                    if ui.selectable_label(sel, text).clicked() && mode == Mode::Idle {
-                        match Route::load(&name) {
-                            Ok(r) => {
-                                let mut st = bot.state.lock().unwrap();
-                                st.record_name = r.name.clone();
-                                st.route = r;
-                                drop(st);
-                                bot.log(format!("Ruta '{name}' cargada."));
+        egui::SidePanel::left("routes")
+            .frame(panel_frame(theme::PANEL))
+            .default_width(280.0)
+            .show(ctx, |ui| {
+                egui::ScrollArea::vertical().id_salt("side").show(ui, |ui| {
+                    theme::section(ui, "RUTAS", SODIUM);
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new("nombre").small().color(DIM));
+                        ui.add(
+                            egui::TextEdit::singleline(&mut bot.state.lock().unwrap().record_name)
+                                .text_color(SODIUM),
+                        );
+                    });
+                    egui::ScrollArea::vertical()
+                        .id_salt("rlist")
+                        .max_height(150.0)
+                        .show(ui, |ui| {
+                            let current = bot.state.lock().unwrap().route.name.clone();
+                            if self.routes.is_empty() {
+                                ui.label(
+                                    RichText::new("sin rutas · pulsa F9 para grabar")
+                                        .small()
+                                        .color(DIM),
+                                );
                             }
-                            Err(e) => bot.log(format!("Error cargando '{name}': {e}")),
-                        }
+                            for name in self.routes.clone() {
+                                let sel = current == name;
+                                let text = RichText::new(format!(
+                                    "{} {name}",
+                                    if sel { "▸" } else { " " }
+                                ))
+                                .monospace()
+                                .color(if sel {
+                                    SODIUM
+                                } else {
+                                    BONE
+                                });
+                                if ui.selectable_label(sel, text).clicked() && mode == Mode::Idle {
+                                    match Route::load(&name) {
+                                        Ok(r) => {
+                                            let mut st = bot.state.lock().unwrap();
+                                            st.record_name = r.name.clone();
+                                            st.route = r;
+                                            drop(st);
+                                            bot.log(format!("Ruta '{name}' cargada."));
+                                        }
+                                        Err(e) => bot.log(format!("Error cargando '{name}': {e}")),
+                                    }
+                                }
+                            }
+                        });
+                    if ui.small_button("⟳ refrescar").clicked() {
+                        self.routes = Route::list();
                     }
-                }
-            });
-            if ui.small_button("⟳ refrescar").clicked() {
-                self.routes = Route::list();
-            }
 
-            theme::section(ui, "REPRODUCCIÓN", PHOSPHOR);
-            let mut st = bot.state.lock().unwrap();
-            let s = &mut st.settings;
-            ui.add(egui::Slider::new(&mut s.speed, 0.25..=4.0).text("velocidad ×"));
-            ui.add(egui::DragValue::new(&mut s.loops).prefix("repeticiones ").suffix("  (0 = ∞)"));
-            ui.add(egui::DragValue::new(&mut s.pause_between_loops_ms).prefix("pausa entre vueltas ").suffix(" ms"));
-            ui.checkbox(&mut s.humanize, "humanizar tiempos y posición");
-            ui.checkbox(&mut s.record_moves, "grabar movimientos del ratón");
+                    theme::section(ui, "REPRODUCCIÓN", PHOSPHOR);
+                    let mut st = bot.state.lock().unwrap();
+                    let s = &mut st.settings;
+                    ui.add(egui::Slider::new(&mut s.speed, 0.25..=4.0).text("velocidad ×"));
+                    ui.add(
+                        egui::DragValue::new(&mut s.loops)
+                            .prefix("repeticiones ")
+                            .suffix("  (0 = ∞)"),
+                    );
+                    ui.add(
+                        egui::DragValue::new(&mut s.pause_between_loops_ms)
+                            .prefix("pausa entre vueltas ")
+                            .suffix(" ms"),
+                    );
+                    ui.checkbox(&mut s.humanize, "humanizar tiempos y posición");
+                    ui.checkbox(&mut s.record_moves, "grabar movimientos del ratón");
 
-            theme::section(ui, "VISIÓN", UV);
-            ui.checkbox(&mut s.use_anchors, "verificar pantalla antes de clicar");
-            ui.add(egui::Slider::new(&mut s.threshold, 0.5..=1.0).text("similitud"));
-            ui.add(egui::Slider::new(&mut s.search_radius, 0..=400).text("radio px"));
-            ui.add(egui::DragValue::new(&mut s.anchor_timeout_ms).prefix("esperar ancla ").suffix(" ms"));
-            ui.horizontal(|ui| {
-                ui.label(RichText::new("si no aparece").small().color(DIM));
-                ui.radio_value(&mut s.on_missing, MissingAnchor::ClickAnyway, "clicar");
-                ui.radio_value(&mut s.on_missing, MissingAnchor::Stop, "detener");
+                    theme::section(ui, "VISIÓN", UV);
+                    ui.checkbox(&mut s.use_anchors, "verificar pantalla antes de clicar");
+                    ui.add(egui::Slider::new(&mut s.threshold, 0.5..=1.0).text("similitud"));
+                    ui.add(egui::Slider::new(&mut s.search_radius, 0..=400).text("radio px"));
+                    ui.add(
+                        egui::DragValue::new(&mut s.anchor_timeout_ms)
+                            .prefix("esperar ancla ")
+                            .suffix(" ms"),
+                    );
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new("si no aparece").small().color(DIM));
+                        ui.radio_value(&mut s.on_missing, MissingAnchor::ClickAnyway, "clicar");
+                        ui.radio_value(&mut s.on_missing, MissingAnchor::Stop, "detener");
+                    });
+                });
             });
-        });
 
         // ── Centro: editor de pasos ──
         egui::CentralPanel::default().frame(egui::Frame::none().inner_margin(Margin::same(16.0))).show(ctx, |ui| {
@@ -397,5 +497,8 @@ impl eframe::App for App {
 }
 
 fn push(bot: &Bot, action: Action) {
-    bot.state.lock().unwrap().route.steps.push(Step { delay_ms: 300, action });
+    bot.state.lock().unwrap().route.steps.push(Step {
+        delay_ms: 300,
+        action,
+    });
 }

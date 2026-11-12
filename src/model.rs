@@ -9,20 +9,43 @@ pub const ROUTES_DIR: &str = "routes";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Action {
-    MouseMove { x: f64, y: f64 },
+    MouseMove {
+        x: f64,
+        y: f64,
+    },
     /// Pulsación de botón. `anchor` = PNG con lo que había en pantalla alrededor
     /// del cursor al grabar: al reproducir, el bot lo busca para saber dónde (y cuándo) clicar.
-    ButtonDown { button: Button, x: f64, y: f64, anchor: Option<String> },
-    ButtonUp { button: Button },
-    Wheel { dx: i64, dy: i64 },
-    KeyDown { key: Key },
-    KeyUp { key: Key },
+    ButtonDown {
+        button: Button,
+        x: f64,
+        y: f64,
+        anchor: Option<String>,
+    },
+    ButtonUp {
+        button: Button,
+    },
+    Wheel {
+        dx: i64,
+        dy: i64,
+    },
+    KeyDown {
+        key: Key,
+    },
+    KeyUp {
+        key: Key,
+    },
     /// Escribe texto (comandos de chat del juego, `/home`, etc.).
-    TypeText { text: String },
+    TypeText {
+        text: String,
+    },
     /// Lanza un programa / comando del sistema.
-    RunCommand { command: String },
+    RunCommand {
+        command: String,
+    },
     /// Pausa explícita.
-    Wait { ms: u64 },
+    Wait {
+        ms: u64,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -56,13 +79,19 @@ pub struct Target {
 impl Target {
     /// Escala (horizontal, vertical) de `self` (al grabar) a `now` (al reproducir).
     pub fn scale_to(&self, now: &Target) -> (f64, f64) {
-        (now.w as f64 / self.w.max(1) as f64, now.h as f64 / self.h.max(1) as f64)
+        (
+            now.w as f64 / self.w.max(1) as f64,
+            now.h as f64 / self.h.max(1) as f64,
+        )
     }
 
     /// Lleva un punto grabado sobre `self` a la misma posición relativa en `now`.
     pub fn map_to(&self, now: &Target, x: f64, y: f64) -> (f64, f64) {
         let (sx, sy) = self.scale_to(now);
-        (now.x as f64 + (x - self.x as f64) * sx, now.y as f64 + (y - self.y as f64) * sy)
+        (
+            now.x as f64 + (x - self.x as f64) * sx,
+            now.y as f64 + (y - self.y as f64) * sy,
+        )
     }
 
     pub fn label(&self) -> String {
@@ -116,7 +145,13 @@ pub fn sanitize(name: &str) -> String {
     let s: String = name
         .trim()
         .chars()
-        .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect();
     if s.is_empty() { "ruta".into() } else { s }
 }
@@ -125,9 +160,18 @@ impl Action {
     pub fn describe(&self) -> String {
         match self {
             Action::MouseMove { x, y } => format!("Mover ratón a ({x:.0}, {y:.0})"),
-            Action::ButtonDown { button, x, y, anchor } => format!(
+            Action::ButtonDown {
+                button,
+                x,
+                y,
+                anchor,
+            } => format!(
                 "Pulsar clic {button:?} en ({x:.0}, {y:.0}){}",
-                if anchor.is_some() { "  [ancla visual]" } else { "" }
+                if anchor.is_some() {
+                    "  [ancla visual]"
+                } else {
+                    ""
+                }
             ),
             Action::ButtonUp { button } => format!("Soltar clic {button:?}"),
             Action::Wheel { dx, dy } => format!("Rueda ({dx}, {dy})"),
@@ -145,9 +189,34 @@ mod tests {
     use super::*;
 
     #[test]
+    fn example_routes_load() {
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/routes");
+        let mut n = 0;
+        for e in std::fs::read_dir(dir).unwrap() {
+            let json = std::fs::read_to_string(e.unwrap().path().join("route.json")).unwrap();
+            let r: Route = serde_json::from_str(&json).unwrap();
+            assert!(!r.steps.is_empty());
+            n += 1;
+        }
+        assert_eq!(n, 3);
+    }
+
+    #[test]
     fn map_scales_and_moves_with_window() {
-        let rec = Target { x: 100, y: 50, w: 1280, h: 720, ..Default::default() };
-        let now = Target { x: 0, y: 0, w: 1920, h: 1080, ..Default::default() };
+        let rec = Target {
+            x: 100,
+            y: 50,
+            w: 1280,
+            h: 720,
+            ..Default::default()
+        };
+        let now = Target {
+            x: 0,
+            y: 0,
+            w: 1920,
+            h: 1080,
+            ..Default::default()
+        };
         // Centro de la ventana grabada → centro de la ventana actual.
         assert_eq!(rec.map_to(&now, 740.0, 410.0), (960.0, 540.0));
         assert_eq!(rec.map_to(&rec, 300.0, 200.0), (300.0, 200.0));

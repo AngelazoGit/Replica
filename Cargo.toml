@@ -2,6 +2,13 @@
 name = "replica"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85"
+description = "Graba lo que haces con ratón y teclado, mira tu pantalla y lo repite por ti: rutas de farmeo, tareas repetitivas y comandos."
+license = "MIT"
+repository = "https://github.com/AngelazoGit/Replica"
+readme = "README.md"
+keywords = ["macro", "automation", "bot", "input", "screen"]
+categories = ["gui", "accessibility"]
 
 [dependencies]
 rdev = { version = "0.5", features = ["serialize"] }

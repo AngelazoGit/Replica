@@ -7,7 +7,7 @@ use image::RgbaImage;
 use rdev::{Button, EventType, Key};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -102,7 +102,10 @@ impl Bot {
         let bot = Arc::new(Bot {
             state: Mutex::new(State {
                 mode: Mode::Idle,
-                route: Route { name: "nueva_ruta".into(), ..Default::default() },
+                route: Route {
+                    name: "nueva_ruta".into(),
+                    ..Default::default()
+                },
                 settings: Settings::default(),
                 record_name: "nueva_ruta".into(),
                 log: VecDeque::new(),
@@ -150,19 +153,27 @@ impl Bot {
         // Mientras se graba, captura continuamente la zona del cursor para que el ancla
         // muestre la pantalla *antes* del clic (el juego puede cambiarla al pulsar).
         let b = bot.clone();
-        thread::spawn(move || loop {
-            let (mode, (x, y)) = {
-                let st = b.state.lock().unwrap();
-                (st.mode, st.mouse)
-            };
-            let frame = if mode == Mode::Recording {
-                let half = (FRAME_SIZE / 2) as i32;
-                vision::capture_region(x as i32 - half, y as i32 - half, FRAME_SIZE, FRAME_SIZE).ok().map(Arc::new)
-            } else {
-                None
-            };
-            *b.frame.lock().unwrap() = frame;
-            thread::sleep(Duration::from_millis(if mode == Mode::Recording { 40 } else { 200 }));
+        thread::spawn(move || {
+            loop {
+                let (mode, (x, y)) = {
+                    let st = b.state.lock().unwrap();
+                    (st.mode, st.mouse)
+                };
+                let frame = if mode == Mode::Recording {
+                    let half = (FRAME_SIZE / 2) as i32;
+                    vision::capture_region(x as i32 - half, y as i32 - half, FRAME_SIZE, FRAME_SIZE)
+                        .ok()
+                        .map(Arc::new)
+                } else {
+                    None
+                };
+                *b.frame.lock().unwrap() = frame;
+                thread::sleep(Duration::from_millis(if mode == Mode::Recording {
+                    40
+                } else {
+                    200
+                }));
+            }
         });
 
         // Hilo de escucha global (rdev::listen bloquea para siempre).
@@ -234,7 +245,9 @@ impl Bot {
         let now = Instant::now();
         let action = match ev {
             EventType::MouseMove { x, y } => {
-                if !st.settings.record_moves || now.duration_since(st.last_move_at) < Duration::from_millis(15) {
+                if !st.settings.record_moves
+                    || now.duration_since(st.last_move_at) < Duration::from_millis(15)
+                {
                     return;
                 }
                 st.last_move_at = now;
@@ -246,16 +259,31 @@ impl Bot {
                 let path = Route::dir(&st.route.name).join(&file);
                 let frame = self.frame.lock().unwrap().clone();
                 let _ = self.anchor_tx.lock().unwrap().send((x, y, path, frame));
-                Action::ButtonDown { button, x, y, anchor: Some(file) }
+                Action::ButtonDown {
+                    button,
+                    x,
+                    y,
+                    anchor: Some(file),
+                }
             }
             EventType::ButtonRelease(button) => Action::ButtonUp { button },
-            EventType::Wheel { delta_x, delta_y } => Action::Wheel { dx: delta_x, dy: delta_y },
+            EventType::Wheel { delta_x, delta_y } => Action::Wheel {
+                dx: delta_x,
+                dy: delta_y,
+            },
             EventType::KeyPress(key) => Action::KeyDown { key },
             EventType::KeyRelease(key) => Action::KeyUp { key },
         };
-        let delay = if st.route.steps.is_empty() { 0 } else { now.duration_since(st.last_step_at).as_millis() as u64 };
+        let delay = if st.route.steps.is_empty() {
+            0
+        } else {
+            now.duration_since(st.last_step_at).as_millis() as u64
+        };
         st.last_step_at = now;
-        st.route.steps.push(Step { delay_ms: delay, action });
+        st.route.steps.push(Step {
+            delay_ms: delay,
+            action,
+        });
         let n = st.route.steps.len();
         st.progress = format!("Grabando… {n} pasos");
         drop(st);
@@ -281,7 +309,13 @@ impl Bot {
                     name = format!("{base}_{n}");
                 }
                 let _ = std::fs::create_dir_all(Route::dir(&name));
-                st.prev_route = std::mem::replace(&mut st.route, Route { name: name.clone(), ..Default::default() });
+                st.prev_route = std::mem::replace(
+                    &mut st.route,
+                    Route {
+                        name: name.clone(),
+                        ..Default::default()
+                    },
+                );
                 // Posición real del cursor: si el primer clic llega sin haber movido el ratón,
                 // no hay ningún MouseMove previo y se grabaría en (0, 0).
                 if let mouse_position::mouse_position::Mouse::Position { x, y } =
@@ -352,9 +386,13 @@ impl Bot {
                 self.stop.store(false, Ordering::SeqCst);
                 let bot = self.clone();
                 thread::spawn(move || {
-                    bot.log(format!("▶ Reproduciendo '{}' (F12 para parar).", route.name));
+                    bot.log(format!(
+                        "▶ Reproduciendo '{}' (F12 para parar).",
+                        route.name
+                    ));
                     let mut player = Player::new(&bot, &route, &settings);
-                    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| player.run()));
+                    let result =
+                        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| player.run()));
                     player.release_all();
                     match result {
                         Ok(Ok(())) => bot.log("✔ Ruta completada."),
@@ -412,13 +450,19 @@ fn clean_recording(steps: &mut Vec<Step>, from_gui: bool) {
         while steps.last().is_some_and(is_move) {
             steps.pop();
         }
-        if matches!(steps.last().map(|s| &s.action), Some(Action::ButtonUp { .. })) {
+        if matches!(
+            steps.last().map(|s| &s.action),
+            Some(Action::ButtonUp { .. })
+        ) {
             steps.pop();
         }
         while steps.last().is_some_and(is_move) {
             steps.pop();
         }
-        if matches!(steps.last().map(|s| &s.action), Some(Action::ButtonDown { .. })) {
+        if matches!(
+            steps.last().map(|s| &s.action),
+            Some(Action::ButtonDown { .. })
+        ) {
             steps.pop();
         }
         while steps.last().is_some_and(is_move) {
@@ -436,7 +480,10 @@ pub fn simplify_moves(steps: &mut Vec<Step>) {
     for (i, s) in steps.iter().enumerate() {
         let keep = match &s.action {
             Action::MouseMove { .. } => {
-                let next_is_move = matches!(steps.get(i + 1).map(|n| &n.action), Some(Action::MouseMove { .. }));
+                let next_is_move = matches!(
+                    steps.get(i + 1).map(|n| &n.action),
+                    Some(Action::MouseMove { .. })
+                );
                 buttons_held > 0 || !next_is_move
             }
             Action::ButtonDown { .. } => {
@@ -475,8 +522,20 @@ struct Player<'a> {
 
 impl<'a> Player<'a> {
     fn new(bot: &'a Arc<Bot>, route: &'a Route, cfg: &'a Settings) -> Self {
-        let seed = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() as u64;
-        Self { bot, route, cfg, anchors: HashMap::new(), window_now: None, keys_down: HashSet::new(), buttons_down: vec![], rng: seed | 1 }
+        let seed = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos() as u64;
+        Self {
+            bot,
+            route,
+            cfg,
+            anchors: HashMap::new(),
+            window_now: None,
+            keys_down: HashSet::new(),
+            buttons_down: vec![],
+            rng: seed | 1,
+        }
     }
 
     /// Aleatorio en [-1, 1] (xorshift, suficiente para humanizar).
@@ -524,16 +583,26 @@ impl<'a> Player<'a> {
         loop {
             lap += 1;
             self.locate_window(lap == 1); // cada vuelta: la ventana puede haberse movido o redimensionado
-            let total = if self.cfg.loops == 0 { "∞".to_string() } else { self.cfg.loops.to_string() };
+            let total = if self.cfg.loops == 0 {
+                "∞".to_string()
+            } else {
+                self.cfg.loops.to_string()
+            };
             let mut clock = Instant::now();
             for (i, step) in self.route.steps.iter().enumerate() {
-                self.bot.set_progress(format!("Vuelta {lap}/{total} · paso {}/{}", i + 1, self.route.steps.len()));
+                self.bot.set_progress(format!(
+                    "Vuelta {lap}/{total} · paso {}/{}",
+                    i + 1,
+                    self.route.steps.len()
+                ));
                 clock += self.scaled(step.delay_ms);
                 self.sleep_until(clock)?;
                 self.exec(&step.action)?;
                 // Reloj absoluto: lo que tarda simular eventos no se acumula como retraso, pero tras
                 // una espera larga (ancla, Wait) no se disparan de golpe los pasos atrasados.
-                let catch_up = Instant::now().checked_sub(Duration::from_millis(50)).unwrap_or(clock);
+                let catch_up = Instant::now()
+                    .checked_sub(Duration::from_millis(50))
+                    .unwrap_or(clock);
                 clock = clock.max(catch_up);
             }
             self.release_all();
@@ -550,7 +619,12 @@ impl<'a> Player<'a> {
                 let (x, y) = self.map(*x, *y);
                 self.send(EventType::MouseMove { x, y })
             }
-            Action::ButtonDown { button, x, y, anchor } => {
+            Action::ButtonDown {
+                button,
+                x,
+                y,
+                anchor,
+            } => {
                 let (mut px, mut py) = self.map(*x, *y);
                 if self.cfg.use_anchors {
                     if let Some(file) = anchor {
@@ -569,7 +643,10 @@ impl<'a> Player<'a> {
                 self.send(EventType::ButtonRelease(*button));
                 self.buttons_down.retain(|b| b != button);
             }
-            Action::Wheel { dx, dy } => self.send(EventType::Wheel { delta_x: *dx, delta_y: *dy }),
+            Action::Wheel { dx, dy } => self.send(EventType::Wheel {
+                delta_x: *dx,
+                delta_y: *dy,
+            }),
             Action::KeyDown { key } => {
                 self.send(EventType::KeyPress(*key));
                 self.keys_down.insert(*key);
@@ -595,16 +672,22 @@ impl<'a> Player<'a> {
                             }
                             thread::sleep(Duration::from_millis(15));
                         }
-                        None => self.bot.log(format!("Carácter no soportado al escribir: {c:?}")),
+                        None => self
+                            .bot
+                            .log(format!("Carácter no soportado al escribir: {c:?}")),
                     }
                 }
             }
             Action::RunCommand { command } => {
                 self.bot.log(format!("Ejecutando: {command}"));
                 #[cfg(windows)]
-                let r = std::process::Command::new("cmd").args(["/C", command]).spawn();
+                let r = std::process::Command::new("cmd")
+                    .args(["/C", command])
+                    .spawn();
                 #[cfg(not(windows))]
-                let r = std::process::Command::new("sh").args(["-c", command]).spawn();
+                let r = std::process::Command::new("sh")
+                    .args(["-c", command])
+                    .spawn();
                 match r {
                     Ok(mut child) => drop(thread::spawn(move || child.wait())),
                     Err(e) => self.bot.log(format!("Error al ejecutar '{command}': {e}")),
@@ -617,7 +700,9 @@ impl<'a> Player<'a> {
 
     /// Busca la ventana objetivo y avisa si cambió de tamaño o no está.
     fn locate_window(&mut self, first: bool) {
-        let Some(rec) = &self.route.target else { return };
+        let Some(rec) = &self.route.target else {
+            return;
+        };
         let now = vision::find_window(rec);
         if first || now != self.window_now {
             let msg = match &now {
@@ -629,7 +714,10 @@ impl<'a> Player<'a> {
                         n.x, n.y, n.w, n.h, rec.w, rec.h
                     )
                 }
-                None => format!("No encuentro la ventana de '{}': uso las coordenadas grabadas.", rec.app),
+                None => format!(
+                    "No encuentro la ventana de '{}': uso las coordenadas grabadas.",
+                    rec.app
+                ),
             };
             self.bot.log(msg);
         }
@@ -669,7 +757,12 @@ impl<'a> Player<'a> {
         if (sx - 1.0).abs() > 0.01 || (sy - 1.0).abs() > 0.01 {
             let w = ((tpl.width() as f64 * sx).round() as u32).max(4);
             let h = ((tpl.height() as f64 * sy).round() as u32).max(4);
-            tpls.push(image::imageops::resize(&tpl, w, h, image::imageops::FilterType::Triangle));
+            tpls.push(image::imageops::resize(
+                &tpl,
+                w,
+                h,
+                image::imageops::FilterType::Triangle,
+            ));
         }
         tpls.push(tpl);
         let radius = (self.cfg.search_radius as f64 * sx.max(sy)) as u32;
@@ -679,13 +772,18 @@ impl<'a> Player<'a> {
             match vision::find_near(&tpls, x, y, radius) {
                 Ok(m) if m.score >= self.cfg.threshold => {
                     if (m.x - x).abs() > 3.0 || (m.y - y).abs() > 3.0 {
-                        self.bot.log(format!("Ancla desplazada: ({x:.0},{y:.0}) → ({:.0},{:.0}) [{:.2}]", m.x, m.y, m.score));
+                        self.bot.log(format!(
+                            "Ancla desplazada: ({x:.0},{y:.0}) → ({:.0},{:.0}) [{:.2}]",
+                            m.x, m.y, m.score
+                        ));
                     }
                     return Ok((m.x, m.y));
                 }
                 Ok(m) => best = best.max(m.score),
                 Err(e) => {
-                    self.bot.log(format!("Captura de pantalla falló ({e}); clic sin verificar."));
+                    self.bot.log(format!(
+                        "Captura de pantalla falló ({e}); clic sin verificar."
+                    ));
                     return Ok((x, y));
                 }
             }
@@ -695,7 +793,9 @@ impl<'a> Player<'a> {
                         self.bot.log(format!("Ancla {file} no encontrada (mejor {best:.2}); clic en posición grabada."));
                         Ok((x, y))
                     }
-                    MissingAnchor::Stop => anyhow::bail!("Ancla {file} no apareció en pantalla (mejor {best:.2}). Ruta detenida."),
+                    MissingAnchor::Stop => anyhow::bail!(
+                        "Ancla {file} no apareció en pantalla (mejor {best:.2}). Ruta detenida."
+                    ),
                 };
             }
             if self.bot.stopped() {
@@ -720,8 +820,8 @@ impl<'a> Player<'a> {
 pub fn char_to_key(c: char) -> Option<(Key, bool)> {
     use Key::*;
     const LETTERS: [Key; 26] = [
-        KeyA, KeyB, KeyC, KeyD, KeyE, KeyF, KeyG, KeyH, KeyI, KeyJ, KeyK, KeyL, KeyM, KeyN, KeyO, KeyP, KeyQ, KeyR,
-        KeyS, KeyT, KeyU, KeyV, KeyW, KeyX, KeyY, KeyZ,
+        KeyA, KeyB, KeyC, KeyD, KeyE, KeyF, KeyG, KeyH, KeyI, KeyJ, KeyK, KeyL, KeyM, KeyN, KeyO,
+        KeyP, KeyQ, KeyR, KeyS, KeyT, KeyU, KeyV, KeyW, KeyX, KeyY, KeyZ,
     ];
     const DIGITS: [Key; 10] = [Num0, Num1, Num2, Num3, Num4, Num5, Num6, Num7, Num8, Num9];
     const SHIFT_DIGITS: &str = ")!@#$%^&*(";
@@ -766,12 +866,23 @@ mod tests {
     use super::*;
 
     fn mv(d: u64) -> Step {
-        Step { delay_ms: d, action: Action::MouseMove { x: 1.0, y: 1.0 } }
+        Step {
+            delay_ms: d,
+            action: Action::MouseMove { x: 1.0, y: 1.0 },
+        }
     }
 
     #[test]
     fn simplify_keeps_last_move_and_sums_delays() {
-        let mut steps = vec![mv(10), mv(10), mv(10), Step { delay_ms: 5, action: Action::KeyDown { key: Key::KeyA } }];
+        let mut steps = vec![
+            mv(10),
+            mv(10),
+            mv(10),
+            Step {
+                delay_ms: 5,
+                action: Action::KeyDown { key: Key::KeyA },
+            },
+        ];
         simplify_moves(&mut steps);
         assert_eq!(steps.len(), 2);
         assert_eq!(steps[0].delay_ms, 30);
@@ -781,9 +892,20 @@ mod tests {
     #[test]
     fn clean_drops_orphan_release() {
         let mut steps = vec![
-            Step { delay_ms: 0, action: Action::ButtonUp { button: Button::Left } },
-            Step { delay_ms: 0, action: Action::KeyDown { key: Key::KeyW } },
-            Step { delay_ms: 0, action: Action::KeyUp { key: Key::KeyW } },
+            Step {
+                delay_ms: 0,
+                action: Action::ButtonUp {
+                    button: Button::Left,
+                },
+            },
+            Step {
+                delay_ms: 0,
+                action: Action::KeyDown { key: Key::KeyW },
+            },
+            Step {
+                delay_ms: 0,
+                action: Action::KeyUp { key: Key::KeyW },
+            },
         ];
         clean_recording(&mut steps, false);
         assert_eq!(steps.len(), 2);
@@ -791,9 +913,27 @@ mod tests {
 
     #[test]
     fn clean_from_gui_drops_stop_click() {
-        let down = |b| Step { delay_ms: 0, action: Action::ButtonDown { button: b, x: 0.0, y: 0.0, anchor: None } };
-        let up = |b| Step { delay_ms: 0, action: Action::ButtonUp { button: b } };
-        let mut steps = vec![down(Button::Right), up(Button::Right), mv(5), down(Button::Left), mv(1), up(Button::Left)];
+        let down = |b| Step {
+            delay_ms: 0,
+            action: Action::ButtonDown {
+                button: b,
+                x: 0.0,
+                y: 0.0,
+                anchor: None,
+            },
+        };
+        let up = |b| Step {
+            delay_ms: 0,
+            action: Action::ButtonUp { button: b },
+        };
+        let mut steps = vec![
+            down(Button::Right),
+            up(Button::Right),
+            mv(5),
+            down(Button::Left),
+            mv(1),
+            up(Button::Left),
+        ];
         clean_recording(&mut steps, true);
         assert_eq!(steps.len(), 2);
     }

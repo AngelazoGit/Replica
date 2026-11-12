@@ -8,8 +8,8 @@
 //! El ancla se toma de un fotograma capturado *antes* del clic (ver `Bot`), para
 //! no guardar el estado de la pantalla después de que el juego reaccione al clic.
 
-use image::{GrayImage, RgbaImage};
 use crate::model::Target;
+use image::{GrayImage, RgbaImage};
 use xcap::Monitor;
 
 /// Lado del recorte que se guarda como ancla (píxeles).
@@ -34,11 +34,19 @@ pub fn capture_region(x: i32, y: i32, w: u32, h: u32) -> anyhow::Result<(RgbaIma
         image::imageops::crop_imm(&full, lx as u32, ly as u32, w, h).to_image()
     } else {
         let px = |v: f64| (v * s).round() as u32;
-        let (cx, cy) = (px(lx as f64).min(full.width() - 1), px(ly as f64).min(full.height() - 1));
+        let (cx, cy) = (
+            px(lx as f64).min(full.width() - 1),
+            px(ly as f64).min(full.height() - 1),
+        );
         let cw = px(w as f64).clamp(1, full.width() - cx);
         let ch = px(h as f64).clamp(1, full.height() - cy);
         let crop = image::imageops::crop_imm(&full, cx, cy, cw, ch).to_image();
-        image::imageops::resize(&crop, w.max(1), h.max(1), image::imageops::FilterType::Triangle)
+        image::imageops::resize(
+            &crop,
+            w.max(1),
+            h.max(1),
+            image::imageops::FilterType::Triangle,
+        )
     };
     Ok((img, mon.x() + lx, mon.y() + ly))
 }
@@ -49,7 +57,9 @@ pub fn list_windows() -> Vec<Target> {
         .unwrap_or_default()
         .into_iter()
         // xcap sólo da el PID en Windows: la ventana propia se reconoce por su título.
-        .filter(|w| w.title() != crate::APP_TITLE && !w.is_minimized() && w.width() > 1 && w.height() > 1)
+        .filter(|w| {
+            w.title() != crate::APP_TITLE && !w.is_minimized() && w.width() > 1 && w.height() > 1
+        })
         .map(|w| Target {
             app: w.app_name().to_string(),
             title: w.title().to_string(),
@@ -77,8 +87,15 @@ pub fn window_at(x: f64, y: f64) -> Option<Target> {
 
 /// Busca ahora la ventana grabada: misma aplicación, preferiblemente mismo título.
 pub fn find_window(t: &Target) -> Option<Target> {
-    let same_app: Vec<Target> = list_windows().into_iter().filter(|w| w.app == t.app).collect();
-    same_app.iter().find(|w| w.title == t.title).or(same_app.first()).cloned()
+    let same_app: Vec<Target> = list_windows()
+        .into_iter()
+        .filter(|w| w.app == t.app)
+        .collect();
+    same_app
+        .iter()
+        .find(|w| w.title == t.title)
+        .or(same_app.first())
+        .cloned()
 }
 
 /// Recorta el ancla de un fotograma ya capturado `(img, x0, y0)` si la contiene entera.
@@ -86,8 +103,13 @@ pub fn anchor_from_frame(frame: &(RgbaImage, i32, i32), cx: f64, cy: f64) -> Opt
     let (img, x0, y0) = frame;
     let half = (ANCHOR_SIZE / 2) as i32;
     let (lx, ly) = (cx as i32 - half - x0, cy as i32 - half - y0);
-    let fits = lx >= 0 && ly >= 0 && lx as u32 + ANCHOR_SIZE <= img.width() && ly as u32 + ANCHOR_SIZE <= img.height();
-    fits.then(|| image::imageops::crop_imm(img, lx as u32, ly as u32, ANCHOR_SIZE, ANCHOR_SIZE).to_image())
+    let fits = lx >= 0
+        && ly >= 0
+        && lx as u32 + ANCHOR_SIZE <= img.width()
+        && ly as u32 + ANCHOR_SIZE <= img.height();
+    fits.then(|| {
+        image::imageops::crop_imm(img, lx as u32, ly as u32, ANCHOR_SIZE, ANCHOR_SIZE).to_image()
+    })
 }
 
 /// Recorte centrado en un punto (para crear anclas al grabar).
@@ -121,7 +143,11 @@ pub fn find_near(templates: &[GrayImage], cx: f64, cy: f64, radius: u32) -> anyh
             let ex = (cx as i32 - (tw / 2) as i32 - ox).max(0) as u32;
             let ey = (cy as i32 - (th / 2) as i32 - oy).max(0) as u32;
             let (bx, by, score) = best_match(&area, t, (ex, ey));
-            Match { x: (ox + bx as i32) as f64 + tw as f64 / 2.0, y: (oy + by as i32) as f64 + th as f64 / 2.0, score }
+            Match {
+                x: (ox + bx as i32) as f64 + tw as f64 / 2.0,
+                y: (oy + by as i32) as f64 + th as f64 / 2.0,
+                score,
+            }
         })
         .max_by(|a, b| a.score.total_cmp(&b.score))
         .ok_or_else(|| anyhow::anyhow!("sin plantillas"))
@@ -144,7 +170,9 @@ pub fn best_match(hay: &GrayImage, needle: &GrayImage, prefer: (u32, u32)) -> (u
         let mut s = 0u64;
         for j in 0..nh as usize {
             let h0 = (y as usize + j) * hw + x as usize;
-            let row = hr[h0..h0 + nw_us].iter().zip(&nr[j * nw_us..(j + 1) * nw_us]);
+            let row = hr[h0..h0 + nw_us]
+                .iter()
+                .zip(&nr[j * nw_us..(j + 1) * nw_us]);
             s += row.map(|(a, b)| a.abs_diff(*b) as u64).sum::<u64>();
             if s >= limit {
                 return s; // poda: ya es peor que el mejor
@@ -177,7 +205,10 @@ mod tests {
 
     #[test]
     fn finds_template_in_image() {
-        let hay = GrayImage::from_fn(200, 150, |x, y| { let h = (x.wrapping_mul(73856093) ^ y.wrapping_mul(19349663)).wrapping_mul(2654435761); image::Luma([(h >> 24) as u8]) });
+        let hay = GrayImage::from_fn(200, 150, |x, y| {
+            let h = (x.wrapping_mul(73856093) ^ y.wrapping_mul(19349663)).wrapping_mul(2654435761);
+            image::Luma([(h >> 24) as u8])
+        });
         let needle = image::imageops::crop_imm(&hay, 77, 41, 30, 30).to_image();
         let (x, y, score) = best_match(&hay, &needle, (0, 0));
         assert_eq!((x, y), (77, 41));

@@ -1,0 +1,54 @@
+{
+  "name": "comando_chat",
+  "target": null,
+  "steps": [
+    {
+      "delay_ms": 0,
+      "action": {
+        "KeyDown": {
+          "key": "KeyT"
+        }
+      }
+    },
+    {
+      "delay_ms": 60,
+      "action": {
+        "KeyUp": {
+          "key": "KeyT"
+        }
+      }
+    },
+    {
+      "delay_ms": 400,
+      "action": {
+        "TypeText": {
+          "text": "/home"
+        }
+      }
+    },
+    {
+      "delay_ms": 150,
+      "action": {
+        "KeyDown": {
+          "key": "Return"
+        }
+      }
+    },
+    {
+      "delay_ms": 60,
+      "action": {
+        "KeyUp": {
+          "key": "Return"
+        }
+      }
+    },
+    {
+      "delay_ms": 0,
+      "action": {
+        "Wait": {
+          "ms": 5000
+        }
+      }
+    }
+  ]
+}

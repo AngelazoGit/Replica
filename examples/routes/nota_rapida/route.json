@@ -1,0 +1,30 @@
+{
+  "name": "nota_rapida",
+  "target": null,
+  "steps": [
+    {
+      "delay_ms": 0,
+      "action": {
+        "RunCommand": {
+          "command": "notepad.exe"
+        }
+      }
+    },
+    {
+      "delay_ms": 0,
+      "action": {
+        "Wait": {
+          "ms": 1500
+        }
+      }
+    },
+    {
+      "delay_ms": 200,
+      "action": {
+        "TypeText": {
+          "text": "Hola desde Replica!\nEsta nota la ha escrito un bot.\n"
+        }
+      }
+    }
+  ]
+}
