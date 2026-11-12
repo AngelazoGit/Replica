@@ -15,6 +15,12 @@ fn main() {
         }
         // F9 mantenido: el SO repite KeyPress; sólo debe contar una vez.
         "hold" => { for _ in 0..4 { s(KeyPress(Key::F9)); } s(KeyRelease(Key::F9)); }
+        // Clic sin mover el ratón antes: debe grabarse en la posición real del cursor.
+        "still" => {
+            s(KeyPress(Key::F9)); s(KeyRelease(Key::F9));
+            s(ButtonPress(Button::Left)); s(ButtonRelease(Button::Left));
+            s(KeyPress(Key::F9)); s(KeyRelease(Key::F9));
+        }
         "play" => { s(KeyPress(Key::F10)); s(KeyRelease(Key::F10)); }
         _ => {}
     }

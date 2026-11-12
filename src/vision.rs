@@ -4,8 +4,12 @@
 //! (el "ancla"). Al reproducir se busca ese recorte cerca de la posición original:
 //! - si aparece → se clica donde está ahora (se adapta si la ventana/UI se movió);
 //! - si no aparece → se espera (p.ej. a que cargue una pantalla) hasta un timeout.
+//!
+//! El ancla se toma de un fotograma capturado *antes* del clic (ver `Bot`), para
+//! no guardar el estado de la pantalla después de que el juego reaccione al clic.
 
 use image::{GrayImage, RgbaImage};
+use crate::model::Target;
 use xcap::Monitor;
 
 /// Lado del recorte que se guarda como ancla (píxeles).
@@ -13,18 +17,77 @@ pub const ANCHOR_SIZE: u32 = 48;
 
 /// Captura la región `(x, y, w, h)` en coordenadas globales de pantalla.
 /// La región se recorta a los límites del monitor; devuelve la imagen y su
-/// origen real en coordenadas globales.
+/// origen real en coordenadas globales. La imagen siempre está en las mismas
+/// unidades que el ratón (en Retina/HiDPI la captura física se reescala).
 pub fn capture_region(x: i32, y: i32, w: u32, h: u32) -> anyhow::Result<(RgbaImage, i32, i32)> {
     let mon = Monitor::from_point(x + w as i32 / 2, y + h as i32 / 2)
         .or_else(|_| Monitor::from_point(x.max(0), y.max(0)))?;
     let full = mon.capture_image()?;
-    // Coordenadas locales al monitor, recortadas a sus límites.
-    let lx = (x - mon.x()).clamp(0, full.width() as i32 - 1) as u32;
-    let ly = (y - mon.y()).clamp(0, full.height() as i32 - 1) as u32;
-    let w = w.min(full.width() - lx);
-    let h = h.min(full.height() - ly);
-    let img = image::imageops::crop_imm(&full, lx, ly, w, h).to_image();
-    Ok((img, mon.x() + lx as i32, mon.y() + ly as i32))
+    let (mw, mh) = (mon.width().max(1) as i32, mon.height().max(1) as i32);
+    let lx = (x - mon.x()).clamp(0, mw - 1);
+    let ly = (y - mon.y()).clamp(0, mh - 1);
+    let w = (w as i32).min(mw - lx) as u32;
+    let h = (h as i32).min(mh - ly) as u32;
+    // Píxeles de imagen por unidad de ratón (2.0 en Retina, 1.0 normalmente).
+    let s = full.width() as f64 / mw as f64;
+    let img = if (s - 1.0).abs() < 0.01 {
+        image::imageops::crop_imm(&full, lx as u32, ly as u32, w, h).to_image()
+    } else {
+        let px = |v: f64| (v * s).round() as u32;
+        let (cx, cy) = (px(lx as f64).min(full.width() - 1), px(ly as f64).min(full.height() - 1));
+        let cw = px(w as f64).clamp(1, full.width() - cx);
+        let ch = px(h as f64).clamp(1, full.height() - cy);
+        let crop = image::imageops::crop_imm(&full, cx, cy, cw, ch).to_image();
+        image::imageops::resize(&crop, w.max(1), h.max(1), image::imageops::FilterType::Triangle)
+    };
+    Ok((img, mon.x() + lx, mon.y() + ly))
+}
+
+/// Ventanas visibles de otras aplicaciones (excluye la propia Replica).
+pub fn list_windows() -> Vec<Target> {
+    xcap::Window::all()
+        .unwrap_or_default()
+        .into_iter()
+        // xcap sólo da el PID en Windows: la ventana propia se reconoce por su título.
+        .filter(|w| w.title() != crate::APP_TITLE && !w.is_minimized() && w.width() > 1 && w.height() > 1)
+        .map(|w| Target {
+            app: w.app_name().to_string(),
+            title: w.title().to_string(),
+            x: w.x(),
+            y: w.y(),
+            w: w.width(),
+            h: w.height(),
+        })
+        .collect()
+}
+
+/// Ventana bajo un punto de la pantalla.
+pub fn window_at(x: f64, y: f64) -> Option<Target> {
+    let (x, y) = (x as i32, y as i32);
+    let mut hits = list_windows()
+        .into_iter()
+        .filter(|t| x >= t.x && y >= t.y && x < t.x + t.w as i32 && y < t.y + t.h as i32);
+    if cfg!(target_os = "linux") {
+        // X11 no da el orden Z: la ventana más pequeña que contiene el punto es la de delante.
+        hits.min_by_key(|t| t.w as u64 * t.h as u64)
+    } else {
+        hits.next() // Windows y macOS listan de delante hacia atrás
+    }
+}
+
+/// Busca ahora la ventana grabada: misma aplicación, preferiblemente mismo título.
+pub fn find_window(t: &Target) -> Option<Target> {
+    let same_app: Vec<Target> = list_windows().into_iter().filter(|w| w.app == t.app).collect();
+    same_app.iter().find(|w| w.title == t.title).or(same_app.first()).cloned()
+}
+
+/// Recorta el ancla de un fotograma ya capturado `(img, x0, y0)` si la contiene entera.
+pub fn anchor_from_frame(frame: &(RgbaImage, i32, i32), cx: f64, cy: f64) -> Option<RgbaImage> {
+    let (img, x0, y0) = frame;
+    let half = (ANCHOR_SIZE / 2) as i32;
+    let (lx, ly) = (cx as i32 - half - x0, cy as i32 - half - y0);
+    let fits = lx >= 0 && ly >= 0 && lx as u32 + ANCHOR_SIZE <= img.width() && ly as u32 + ANCHOR_SIZE <= img.height();
+    fits.then(|| image::imageops::crop_imm(img, lx as u32, ly as u32, ANCHOR_SIZE, ANCHOR_SIZE).to_image())
 }
 
 /// Recorte centrado en un punto (para crear anclas al grabar).
@@ -117,6 +180,13 @@ mod tests {
         let (x, y, score) = best_match(&hay, &needle, (0, 0));
         assert_eq!((x, y), (77, 41));
         assert!(score > 0.999);
+    }
+
+    #[test]
+    fn anchor_from_frame_needs_full_square() {
+        let frame = (RgbaImage::new(256, 256), 1000, 500);
+        assert!(anchor_from_frame(&frame, 1128.0, 628.0).is_some());
+        assert!(anchor_from_frame(&frame, 1010.0, 628.0).is_none()); // se sale por la izquierda
     }
 
     #[test]

@@ -1,7 +1,7 @@
 //! Interfaz gráfica (egui) con la estética de Replica.
 
 use crate::bot::{simplify_moves, Bot, MissingAnchor, Mode};
-use crate::model::{Action, Route, Step};
+use crate::model::{Action, Route, Step, Target};
 use crate::theme::{self, BONE, CORAL, DIM, LINE, PANEL_HI, PHOSPHOR, SODIUM, UV, VOID};
 use eframe::egui::{self, Color32, Margin, RichText, Rounding, Stroke};
 use std::collections::HashMap;
@@ -15,6 +15,7 @@ pub struct App {
     new_cmd: String,
     new_wait: u64,
     last_mode: Mode,
+    windows: Vec<Target>,
 }
 
 impl App {
@@ -29,6 +30,7 @@ impl App {
             new_cmd: String::new(),
             new_wait: 1000,
             last_mode: Mode::Idle,
+            windows: vec![],
         }
     }
 
@@ -70,6 +72,7 @@ impl eframe::App for App {
         if mode != self.last_mode {
             self.routes = Route::list(); // p.ej. tras grabar con F9
             self.textures.clear();
+            self.windows.clear(); // se vuelve a listar al abrir el selector
             self.last_mode = mode;
         }
         let t = ctx.input(|i| i.time);
@@ -218,6 +221,39 @@ impl eframe::App for App {
                 ui.label(RichText::new("RUTA").small().color(DIM));
                 ui.label(RichText::new(name.to_uppercase()).heading().color(SODIUM));
                 ui.label(RichText::new(format!("{n} pasos · {secs:.1} s")).monospace().color(DIM));
+            });
+            ui.add_enabled_ui(editable, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label(RichText::new("VENTANA").small().color(DIM));
+                    let target = bot.state.lock().unwrap().route.target.clone();
+                    let shown = target.as_ref().map_or("pantalla completa (coordenadas absolutas)".into(), Target::label);
+                    let mut pick: Option<Option<Target>> = None;
+                    egui::ComboBox::from_id_salt("target")
+                        .selected_text(RichText::new(shown).color(UV))
+                        .width(420.0)
+                        .show_ui(ui, |ui| {
+                            if ui.selectable_label(false, "⟳ actualizar lista").clicked() || self.windows.is_empty() {
+                                self.windows = crate::vision::list_windows();
+                            }
+                            if ui.selectable_label(target.is_none(), "pantalla completa").clicked() {
+                                pick = Some(None);
+                            }
+                            for w in &self.windows {
+                                if ui.selectable_label(target.as_ref() == Some(w), w.label()).clicked() {
+                                    pick = Some(Some(w.clone()));
+                                }
+                            }
+                        })
+                        .response
+                        .on_hover_text(
+                            "Al reproducir, las coordenadas se adaptan a la posición y tamaño actuales de esta \
+                             ventana. Si la cambias, hazlo sin haberla movido desde que grabaste.",
+                        );
+                    if let Some(t) = pick {
+                        bot.state.lock().unwrap().route.target = t;
+                        bot.log("Ventana objetivo cambiada (pulsa guardar).");
+                    }
+                });
             });
             ui.add_space(4.0);
 

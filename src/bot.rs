@@ -1,7 +1,7 @@
 //! Núcleo del bot: escucha global de ratón/teclado (grabación + atajos),
 //! y reproductor de rutas con verificación visual.
 
-use crate::model::{Action, Route, Step};
+use crate::model::{Action, Route, Step, Target};
 use crate::vision;
 use image::RgbaImage;
 use rdev::{Button, EventType, Key};
@@ -79,20 +79,30 @@ pub struct State {
     prev_route: Route,
 }
 
+/// Fotograma reciente alrededor del cursor: (imagen, x0, y0) en coordenadas globales.
+type Frame = Arc<(RgbaImage, i32, i32)>;
+
+/// Petición de guardar un ancla: punto del clic, PNG destino y fotograma previo al clic.
+type AnchorJob = (f64, f64, std::path::PathBuf, Option<Frame>);
+
+/// Lado del fotograma que se captura continuamente alrededor del cursor al grabar.
+const FRAME_SIZE: u32 = 256;
+
 pub struct Bot {
     pub state: Mutex<State>,
     stop: AtomicBool,
     repaint: Mutex<Option<eframe::egui::Context>>,
-    anchor_tx: Mutex<mpsc::Sender<(f64, f64, std::path::PathBuf)>>,
+    anchor_tx: Mutex<mpsc::Sender<AnchorJob>>,
+    frame: Mutex<Option<Frame>>,
 }
 
 impl Bot {
     pub fn new() -> Arc<Bot> {
-        let (tx, rx) = mpsc::channel::<(f64, f64, std::path::PathBuf)>();
+        let (tx, rx) = mpsc::channel::<AnchorJob>();
         let bot = Arc::new(Bot {
             state: Mutex::new(State {
                 mode: Mode::Idle,
-                route: Route { name: "nueva_ruta".into(), steps: vec![] },
+                route: Route { name: "nueva_ruta".into(), ..Default::default() },
                 settings: Settings::default(),
                 record_name: "nueva_ruta".into(),
                 log: VecDeque::new(),
@@ -106,17 +116,50 @@ impl Bot {
             stop: AtomicBool::new(false),
             repaint: Mutex::new(None),
             anchor_tx: Mutex::new(tx),
+            frame: Mutex::new(None),
         });
 
         // Hilo que guarda anclas visuales sin bloquear la escucha de entrada.
         let b = bot.clone();
         thread::spawn(move || {
-            for (x, y, path) in rx {
-                match vision::capture_anchor(x, y).and_then(|img| Ok(img.save(&path)?)) {
-                    Ok(()) => {}
-                    Err(e) => b.log(format!("No se pudo capturar ancla: {e}")),
+            for (x, y, path, frame) in rx {
+                // Preferimos el fotograma de antes del clic; si no contiene el punto, captura en vivo.
+                let img = match frame.and_then(|f| vision::anchor_from_frame(&f, x, y)) {
+                    Some(img) => Ok(img),
+                    None => vision::capture_anchor(x, y),
+                };
+                if let Err(e) = img.and_then(|img| Ok(img.save(&path)?)) {
+                    b.log(format!("No se pudo capturar ancla: {e}"));
+                }
+                // Ventana objetivo = la que está bajo el primer clic, detectada al momento
+                // (al parar la grabación podría haberse movido o cerrado).
+                let first = b.state.lock().unwrap().route.target.is_none();
+                if first {
+                    let target = vision::window_at(x, y);
+                    let mut st = b.state.lock().unwrap();
+                    if st.mode == Mode::Recording && st.route.target.is_none() {
+                        st.route.target = target;
+                    }
                 }
             }
+        });
+
+        // Mientras se graba, captura continuamente la zona del cursor para que el ancla
+        // muestre la pantalla *antes* del clic (el juego puede cambiarla al pulsar).
+        let b = bot.clone();
+        thread::spawn(move || loop {
+            let (mode, (x, y)) = {
+                let st = b.state.lock().unwrap();
+                (st.mode, st.mouse)
+            };
+            let frame = if mode == Mode::Recording {
+                let half = (FRAME_SIZE / 2) as i32;
+                vision::capture_region(x as i32 - half, y as i32 - half, FRAME_SIZE, FRAME_SIZE).ok().map(Arc::new)
+            } else {
+                None
+            };
+            *b.frame.lock().unwrap() = frame;
+            thread::sleep(Duration::from_millis(if mode == Mode::Recording { 40 } else { 200 }));
         });
 
         // Hilo de escucha global (rdev::listen bloquea para siempre).
@@ -198,7 +241,8 @@ impl Bot {
                 let (x, y) = st.mouse;
                 let file = format!("anchor_{:04}.png", st.route.steps.len());
                 let path = Route::dir(&st.route.name).join(&file);
-                let _ = self.anchor_tx.lock().unwrap().send((x, y, path));
+                let frame = self.frame.lock().unwrap().clone();
+                let _ = self.anchor_tx.lock().unwrap().send((x, y, path, frame));
                 Action::ButtonDown { button, x, y, anchor: Some(file) }
             }
             EventType::ButtonRelease(button) => Action::ButtonUp { button },
@@ -234,7 +278,14 @@ impl Bot {
                     name = format!("{base}_{n}");
                 }
                 let _ = std::fs::create_dir_all(Route::dir(&name));
-                st.prev_route = std::mem::replace(&mut st.route, Route { name: name.clone(), steps: vec![] });
+                st.prev_route = std::mem::replace(&mut st.route, Route { name: name.clone(), ..Default::default() });
+                // Posición real del cursor: si el primer clic llega sin haber movido el ratón,
+                // no hay ningún MouseMove previo y se grabaría en (0, 0).
+                if let mouse_position::mouse_position::Mouse::Position { x, y } =
+                    mouse_position::mouse_position::Mouse::get_mouse_position()
+                {
+                    st.mouse = (x as f64, y as f64);
+                }
                 st.mode = Mode::Recording;
                 st.last_step_at = Instant::now();
                 drop(st);
@@ -257,10 +308,14 @@ impl Bot {
                 // Los PNG de anclas los sigue escribiendo su hilo; route.json no depende de ellos.
                 match route.save() {
                     Ok(()) => self.log(format!(
-                        "■ Ruta '{}' guardada: {} pasos, {:.1} s.",
+                        "■ Ruta '{}' guardada: {} pasos, {:.1} s. {}",
                         route.name,
                         route.steps.len(),
-                        route.duration_ms() as f64 / 1000.0
+                        route.duration_ms() as f64 / 1000.0,
+                        match &route.target {
+                            Some(t) => format!("Ventana objetivo: {}", t.label()),
+                            None => "Sin ventana objetivo: coordenadas de pantalla.".into(),
+                        }
                     )),
                     Err(e) => self.log(format!("Error guardando ruta: {e}")),
                 }
@@ -407,6 +462,8 @@ struct Player<'a> {
     route: &'a Route,
     cfg: &'a Settings,
     anchors: HashMap<String, Option<RgbaImage>>,
+    /// Ventana objetivo tal como está ahora (None = coordenadas grabadas tal cual).
+    window_now: Option<Target>,
     keys_down: HashSet<Key>,
     buttons_down: Vec<Button>,
     rng: u64,
@@ -415,7 +472,7 @@ struct Player<'a> {
 impl<'a> Player<'a> {
     fn new(bot: &'a Arc<Bot>, route: &'a Route, cfg: &'a Settings) -> Self {
         let seed = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() as u64;
-        Self { bot, route, cfg, anchors: HashMap::new(), keys_down: HashSet::new(), buttons_down: vec![], rng: seed | 1 }
+        Self { bot, route, cfg, anchors: HashMap::new(), window_now: None, keys_down: HashSet::new(), buttons_down: vec![], rng: seed | 1 }
     }
 
     /// Aleatorio en [-1, 1] (xorshift, suficiente para humanizar).
@@ -453,6 +510,7 @@ impl<'a> Player<'a> {
         let mut lap = 0u32;
         loop {
             lap += 1;
+            self.locate_window(lap == 1); // cada vuelta: la ventana puede haberse movido o redimensionado
             let total = if self.cfg.loops == 0 { "∞".to_string() } else { self.cfg.loops.to_string() };
             for (i, step) in self.route.steps.iter().enumerate() {
                 self.bot.set_progress(format!("Vuelta {lap}/{total} · paso {}/{}", i + 1, self.route.steps.len()));
@@ -469,12 +527,15 @@ impl<'a> Player<'a> {
 
     fn exec(&mut self, action: &Action) -> anyhow::Result<()> {
         match action {
-            Action::MouseMove { x, y } => self.send(EventType::MouseMove { x: *x, y: *y }),
+            Action::MouseMove { x, y } => {
+                let (x, y) = self.map(*x, *y);
+                self.send(EventType::MouseMove { x, y })
+            }
             Action::ButtonDown { button, x, y, anchor } => {
-                let (mut px, mut py) = (*x, *y);
+                let (mut px, mut py) = self.map(*x, *y);
                 if self.cfg.use_anchors {
                     if let Some(file) = anchor {
-                        (px, py) = self.locate_anchor(file, *x, *y)?;
+                        (px, py) = self.locate_anchor(file, px, py)?;
                     }
                 }
                 if self.cfg.humanize {
@@ -535,7 +596,44 @@ impl<'a> Player<'a> {
         Ok(())
     }
 
+    /// Busca la ventana objetivo y avisa si cambió de tamaño o no está.
+    fn locate_window(&mut self, first: bool) {
+        let Some(rec) = &self.route.target else { return };
+        let now = vision::find_window(rec);
+        if first || now != self.window_now {
+            let msg = match &now {
+                Some(n) if n == rec => format!("Ventana objetivo: {}", n.label()),
+                Some(n) => {
+                    let (sx, sy) = rec.scale_to(n);
+                    format!(
+                        "Ventana en ({}, {}) {}×{} (grabada {}×{}): escala {sx:.2}×{sy:.2}.",
+                        n.x, n.y, n.w, n.h, rec.w, rec.h
+                    )
+                }
+                None => format!("No encuentro la ventana de '{}': uso las coordenadas grabadas.", rec.app),
+            };
+            self.bot.log(msg);
+        }
+        self.window_now = now;
+    }
+
+    /// Coordenadas grabadas → coordenadas actuales según la ventana objetivo.
+    fn map(&self, x: f64, y: f64) -> (f64, f64) {
+        match (&self.route.target, &self.window_now) {
+            (Some(rec), Some(now)) => rec.map_to(now, x, y),
+            _ => (x, y),
+        }
+    }
+
+    fn scale(&self) -> (f64, f64) {
+        match (&self.route.target, &self.window_now) {
+            (Some(rec), Some(now)) => rec.scale_to(now),
+            _ => (1.0, 1.0),
+        }
+    }
+
     /// Espera a que el ancla aparezca en pantalla y devuelve dónde clicar.
+    /// `x, y` ya están en coordenadas actuales.
     fn locate_anchor(&mut self, file: &str, x: f64, y: f64) -> anyhow::Result<(f64, f64)> {
         let path = self.route.anchor_path(file);
         let tpl = self
@@ -544,10 +642,26 @@ impl<'a> Player<'a> {
             .or_insert_with(|| image::open(&path).ok().map(|i| i.to_rgba8()))
             .clone();
         let Some(tpl) = tpl else { return Ok((x, y)) }; // sin ancla guardada
+        // Otra resolución: los juegos escalan su interfaz con la ventana y las apps de
+        // escritorio no, así que se prueba el ancla escalada y la original.
+        let (sx, sy) = self.scale();
+        let mut tpls = vec![];
+        if (sx - 1.0).abs() > 0.01 || (sy - 1.0).abs() > 0.01 {
+            let w = ((tpl.width() as f64 * sx).round() as u32).max(4);
+            let h = ((tpl.height() as f64 * sy).round() as u32).max(4);
+            tpls.push(image::imageops::resize(&tpl, w, h, image::imageops::FilterType::Triangle));
+        }
+        tpls.push(tpl);
+        let radius = (self.cfg.search_radius as f64 * sx.max(sy)) as u32;
         let deadline = Instant::now() + Duration::from_millis(self.cfg.anchor_timeout_ms);
         let mut best = 0.0f32;
         loop {
-            match vision::find_near(&tpl, x, y, self.cfg.search_radius) {
+            let found = tpls
+                .iter()
+                .map(|t| vision::find_near(t, x, y, radius))
+                .collect::<anyhow::Result<Vec<_>>>()
+                .map(|ms| ms.into_iter().max_by(|a, b| a.score.total_cmp(&b.score)).unwrap());
+            match found {
                 Ok(m) if m.score >= self.cfg.threshold => {
                     if (m.x - x).abs() > 3.0 || (m.y - y).abs() > 3.0 {
                         self.bot.log(format!("Ancla desplazada: ({x:.0},{y:.0}) → ({:.0},{:.0}) [{:.2}]", m.x, m.y, m.score));

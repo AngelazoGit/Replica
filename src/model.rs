@@ -35,7 +35,40 @@ pub struct Step {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Route {
     pub name: String,
+    /// Ventana sobre la que se grabó. Si existe, al reproducir las coordenadas
+    /// se reescalan a su posición y tamaño actuales (otra resolución, ventana movida…).
+    #[serde(default)]
+    pub target: Option<Target>,
     pub steps: Vec<Step>,
+}
+
+/// Ventana de una aplicación y su rectángulo en coordenadas globales.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct Target {
+    pub app: String,
+    pub title: String,
+    pub x: i32,
+    pub y: i32,
+    pub w: u32,
+    pub h: u32,
+}
+
+impl Target {
+    /// Escala (horizontal, vertical) de `self` (al grabar) a `now` (al reproducir).
+    pub fn scale_to(&self, now: &Target) -> (f64, f64) {
+        (now.w as f64 / self.w.max(1) as f64, now.h as f64 / self.h.max(1) as f64)
+    }
+
+    /// Lleva un punto grabado sobre `self` a la misma posición relativa en `now`.
+    pub fn map_to(&self, now: &Target, x: f64, y: f64) -> (f64, f64) {
+        let (sx, sy) = self.scale_to(now);
+        (now.x as f64 + (x - self.x as f64) * sx, now.y as f64 + (y - self.y as f64) * sy)
+    }
+
+    pub fn label(&self) -> String {
+        let title: String = self.title.chars().take(40).collect();
+        format!("{} — {title} ({}×{})", self.app, self.w, self.h)
+    }
 }
 
 impl Route {
@@ -101,5 +134,19 @@ impl Action {
             Action::RunCommand { command } => format!("Ejecutar `{command}`"),
             Action::Wait { ms } => format!("Esperar {ms} ms"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn map_scales_and_moves_with_window() {
+        let rec = Target { x: 100, y: 50, w: 1280, h: 720, ..Default::default() };
+        let now = Target { x: 0, y: 0, w: 1920, h: 1080, ..Default::default() };
+        // Centro de la ventana grabada → centro de la ventana actual.
+        assert_eq!(rec.map_to(&now, 740.0, 410.0), (960.0, 540.0));
+        assert_eq!(rec.map_to(&rec, 300.0, 200.0), (300.0, 200.0));
     }
 }
