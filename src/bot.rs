@@ -73,6 +73,10 @@ pub struct State {
     mouse: (f64, f64),
     last_step_at: Instant,
     last_move_at: Instant,
+    /// Atajo mantenido pulsado: ignora la autorrepetición del SO.
+    hotkey_held: Option<Key>,
+    /// Ruta cargada antes de grabar: se recupera si la grabación sale vacía.
+    prev_route: Route,
 }
 
 pub struct Bot {
@@ -96,6 +100,8 @@ impl Bot {
                 mouse: (0.0, 0.0),
                 last_step_at: Instant::now(),
                 last_move_at: Instant::now(),
+                hotkey_held: None,
+                prev_route: Route::default(),
             }),
             stop: AtomicBool::new(false),
             repaint: Mutex::new(None),
@@ -154,10 +160,20 @@ impl Bot {
     fn on_input(self: &Arc<Self>, ev: EventType) {
         // Atajos globales: funcionan aunque el juego tenga el foco.
         match ev {
-            EventType::KeyPress(HOTKEY_RECORD) => return self.toggle_record(false),
-            EventType::KeyPress(HOTKEY_PLAY) => return self.toggle_play(),
-            EventType::KeyPress(HOTKEY_STOP) => return self.stop_all(),
-            EventType::KeyRelease(HOTKEY_RECORD | HOTKEY_PLAY | HOTKEY_STOP) => return,
+            EventType::KeyPress(k @ (HOTKEY_RECORD | HOTKEY_PLAY | HOTKEY_STOP)) => {
+                if self.state.lock().unwrap().hotkey_held.replace(k) == Some(k) {
+                    return; // autorrepetición: si no, mantener F9 alterna grabar/parar sin control
+                }
+                return match k {
+                    HOTKEY_RECORD => self.toggle_record(false),
+                    HOTKEY_PLAY => self.toggle_play(),
+                    _ => self.stop_all(),
+                };
+            }
+            EventType::KeyRelease(HOTKEY_RECORD | HOTKEY_PLAY | HOTKEY_STOP) => {
+                self.state.lock().unwrap().hotkey_held = None;
+                return;
+            }
             _ => {}
         }
 
@@ -202,30 +218,43 @@ impl Bot {
     // ───────────────────────── Grabación ─────────────────────────
 
     pub fn toggle_record(self: &Arc<Self>, from_gui: bool) {
-        let mode = self.mode();
-        match mode {
-            Mode::Playing => self.log("Para la reproducción antes de grabar (F12)."),
+        let mut st = self.state.lock().unwrap();
+        match st.mode {
+            Mode::Playing => {
+                drop(st);
+                self.log("Para la reproducción antes de grabar (F12).");
+            }
             Mode::Idle => {
-                let mut st = self.state.lock().unwrap();
-                let name = crate::model::sanitize(&st.record_name);
-                let dir = Route::dir(&name);
-                let _ = std::fs::remove_dir_all(&dir);
-                let _ = std::fs::create_dir_all(&dir);
-                st.route = Route { name: name.clone(), steps: vec![] };
+                // Nunca pisar una ruta existente: nombre, nombre_2, nombre_3…
+                let base = crate::model::sanitize(&st.record_name);
+                let mut name = base.clone();
+                let mut n = 1;
+                while Route::dir(&name).exists() {
+                    n += 1;
+                    name = format!("{base}_{n}");
+                }
+                let _ = std::fs::create_dir_all(Route::dir(&name));
+                st.prev_route = std::mem::replace(&mut st.route, Route { name: name.clone(), steps: vec![] });
                 st.mode = Mode::Recording;
                 st.last_step_at = Instant::now();
                 drop(st);
                 self.log(format!("● Grabando ruta '{name}'. Pulsa F9 para terminar."));
             }
             Mode::Recording => {
-                let mut st = self.state.lock().unwrap();
                 st.mode = Mode::Idle;
                 clean_recording(&mut st.route.steps, from_gui);
                 let route = st.route.clone();
                 st.progress.clear();
+                if route.steps.is_empty() {
+                    st.route = std::mem::take(&mut st.prev_route);
+                }
                 drop(st);
-                // Dar tiempo al hilo de anclas a escribir los últimos PNG.
-                thread::sleep(Duration::from_millis(150));
+                if route.steps.is_empty() {
+                    let _ = std::fs::remove_dir_all(Route::dir(&route.name));
+                    self.log("Grabación vacía: no se guarda nada.");
+                    return self.repaint();
+                }
+                // Los PNG de anclas los sigue escribiendo su hilo; route.json no depende de ellos.
                 match route.save() {
                     Ok(()) => self.log(format!(
                         "■ Ruta '{}' guardada: {} pasos, {:.1} s.",
@@ -243,11 +272,17 @@ impl Bot {
     // ───────────────────────── Reproducción ─────────────────────────
 
     pub fn toggle_play(self: &Arc<Self>) {
-        match self.mode() {
-            Mode::Playing => self.stop_all(),
-            Mode::Recording => self.log("Termina la grabación primero (F9)."),
+        let mut st = self.state.lock().unwrap();
+        match st.mode {
+            Mode::Playing => {
+                drop(st);
+                self.stop_all();
+            }
+            Mode::Recording => {
+                drop(st);
+                self.log("Termina la grabación primero (F9).");
+            }
             Mode::Idle => {
-                let mut st = self.state.lock().unwrap();
                 if st.route.steps.is_empty() {
                     drop(st);
                     return self.log("La ruta está vacía: graba o carga una.");
@@ -301,26 +336,33 @@ fn clean_recording(steps: &mut Vec<Step>, from_gui: bool) {
     let mut held_keys = HashSet::new();
     steps.retain(|s| match &s.action {
         Action::ButtonDown { button, .. } => {
-            held_buttons.insert(format!("{button:?}"));
+            held_buttons.insert(*button);
             true
         }
-        Action::ButtonUp { button } => held_buttons.remove(&format!("{button:?}")),
+        Action::ButtonUp { button } => held_buttons.remove(button),
         Action::KeyDown { key } => {
-            held_keys.insert(format!("{key:?}"));
+            held_keys.insert(*key);
             true
         }
-        Action::KeyUp { key } => held_keys.remove(&format!("{key:?}")),
+        Action::KeyUp { key } => held_keys.remove(key),
         _ => true,
     });
     if from_gui {
-        // El último clic fue sobre el botón "Detener" de la app.
-        while matches!(steps.last().map(|s| &s.action), Some(Action::MouseMove { .. })) {
+        // El último clic (pulsar + soltar) fue sobre el botón "Detener" de la app.
+        let is_move = |s: &Step| matches!(s.action, Action::MouseMove { .. });
+        while steps.last().is_some_and(is_move) {
+            steps.pop();
+        }
+        if matches!(steps.last().map(|s| &s.action), Some(Action::ButtonUp { .. })) {
+            steps.pop();
+        }
+        while steps.last().is_some_and(is_move) {
             steps.pop();
         }
         if matches!(steps.last().map(|s| &s.action), Some(Action::ButtonDown { .. })) {
             steps.pop();
         }
-        while matches!(steps.last().map(|s| &s.action), Some(Action::MouseMove { .. })) {
+        while steps.last().is_some_and(is_move) {
             steps.pop();
         }
     }
@@ -483,8 +525,9 @@ impl<'a> Player<'a> {
                 let r = std::process::Command::new("cmd").args(["/C", command]).spawn();
                 #[cfg(not(windows))]
                 let r = std::process::Command::new("sh").args(["-c", command]).spawn();
-                if let Err(e) = r {
-                    self.bot.log(format!("Error al ejecutar '{command}': {e}"));
+                match r {
+                    Ok(mut child) => drop(thread::spawn(move || child.wait())),
+                    Err(e) => self.bot.log(format!("Error al ejecutar '{command}': {e}")),
                 }
             }
             Action::Wait { ms } => self.sleep(*ms)?,
@@ -614,6 +657,15 @@ mod tests {
             Step { delay_ms: 0, action: Action::KeyUp { key: Key::KeyW } },
         ];
         clean_recording(&mut steps, false);
+        assert_eq!(steps.len(), 2);
+    }
+
+    #[test]
+    fn clean_from_gui_drops_stop_click() {
+        let down = |b| Step { delay_ms: 0, action: Action::ButtonDown { button: b, x: 0.0, y: 0.0, anchor: None } };
+        let up = |b| Step { delay_ms: 0, action: Action::ButtonUp { button: b } };
+        let mut steps = vec![down(Button::Right), up(Button::Right), mv(5), down(Button::Left), mv(1), up(Button::Left)];
+        clean_recording(&mut steps, true);
         assert_eq!(steps.len(), 2);
     }
 

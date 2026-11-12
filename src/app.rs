@@ -10,7 +10,7 @@ use std::sync::Arc;
 pub struct App {
     bot: Arc<Bot>,
     routes: Vec<String>,
-    textures: HashMap<std::path::PathBuf, Option<egui::TextureHandle>>,
+    textures: HashMap<std::path::PathBuf, egui::TextureHandle>,
     new_text: String,
     new_cmd: String,
     new_wait: u64,
@@ -33,15 +33,16 @@ impl App {
     }
 
     fn anchor_texture(&mut self, ctx: &egui::Context, path: std::path::PathBuf) -> Option<egui::TextureHandle> {
-        self.textures
-            .entry(path.clone())
-            .or_insert_with(|| {
-                let img = image::open(&path).ok()?.to_rgba8();
-                let size = [img.width() as usize, img.height() as usize];
-                let color = egui::ColorImage::from_rgba_unmultiplied(size, img.as_raw());
-                Some(ctx.load_texture(path.to_string_lossy(), color, Default::default()))
-            })
-            .clone()
+        if let Some(tex) = self.textures.get(&path) {
+            return Some(tex.clone());
+        }
+        // Sin caché si falta: el hilo de anclas puede escribir el PNG un instante después.
+        let img = image::open(&path).ok()?.to_rgba8();
+        let size = [img.width() as usize, img.height() as usize];
+        let color = egui::ColorImage::from_rgba_unmultiplied(size, img.as_raw());
+        let tex = ctx.load_texture(path.to_string_lossy(), color, Default::default());
+        self.textures.insert(path, tex.clone());
+        Some(tex)
     }
 }
 

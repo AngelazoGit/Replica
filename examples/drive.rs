@@ -13,6 +13,8 @@ fn main() {
             s(MouseMove { x: 1150.0, y: 350.0 });
             s(KeyPress(Key::F9)); s(KeyRelease(Key::F9));
         }
+        // F9 mantenido: el SO repite KeyPress; sólo debe contar una vez.
+        "hold" => { for _ in 0..4 { s(KeyPress(Key::F9)); } s(KeyRelease(Key::F9)); }
         "play" => { s(KeyPress(Key::F10)); s(KeyRelease(Key::F10)); }
         _ => {}
     }

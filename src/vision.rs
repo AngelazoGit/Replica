@@ -73,14 +73,14 @@ pub fn best_match(hay: &GrayImage, needle: &GrayImage, prefer: (u32, u32)) -> (u
     }
     let max_x = hw - nw;
     let max_y = hh - nh;
+    let (hr, nr) = (hay.as_raw(), needle.as_raw());
+    let (hw, nw_us) = (hw as usize, nw as usize);
     let sad = |x: u32, y: u32, limit: u64| -> u64 {
         let mut s = 0u64;
-        for j in 0..nh {
-            for i in 0..nw {
-                let a = hay.get_pixel(x + i, y + j)[0] as i32;
-                let b = needle.get_pixel(i, j)[0] as i32;
-                s += (a - b).unsigned_abs() as u64;
-            }
+        for j in 0..nh as usize {
+            let h0 = (y as usize + j) * hw + x as usize;
+            let row = hr[h0..h0 + nw_us].iter().zip(&nr[j * nw_us..(j + 1) * nw_us]);
+            s += row.map(|(a, b)| a.abs_diff(*b) as u64).sum::<u64>();
             if s >= limit {
                 return s; // poda: ya es peor que el mejor
             }
