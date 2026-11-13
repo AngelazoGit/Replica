@@ -4,6 +4,9 @@
 //! F10 = reproducir/parar la ruta cargada
 //! F12 = parada de emergencia
 
+// En Windows, sin ventana de consola detrás de la app.
+#![cfg_attr(windows, windows_subsystem = "windows")]
+
 mod app;
 mod bot;
 mod model;

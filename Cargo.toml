@@ -19,3 +19,7 @@ serde_json = "1"
 anyhow = "1"
 xcap = "0.0.14"
 mouse_position = "0.1.4"
+
+[profile.release]
+strip = true # sin símbolos de depuración: el .exe pasa de ~25 MB a menos de la mitad
+lto = "thin"

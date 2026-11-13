@@ -5,7 +5,16 @@ use rdev::{Button, Key};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-pub const ROUTES_DIR: &str = "routes";
+/// Carpeta `routes` junto al ejecutable (modo portable: todo viaja con el .exe,
+/// da igual desde dónde se abra).
+pub fn routes_dir() -> PathBuf {
+    static DIR: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    DIR.get_or_init(|| {
+        let exe_dir = std::env::current_exe().ok().and_then(|p| p.parent().map(Path::to_path_buf));
+        exe_dir.unwrap_or_default().join("routes")
+    })
+    .clone()
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Action {
@@ -102,7 +111,7 @@ impl Target {
 
 impl Route {
     pub fn dir(name: &str) -> PathBuf {
-        Path::new(ROUTES_DIR).join(sanitize(name))
+        routes_dir().join(sanitize(name))
     }
 
     pub fn save(&self) -> anyhow::Result<()> {
@@ -121,7 +130,7 @@ impl Route {
     }
 
     pub fn list() -> Vec<String> {
-        let mut out: Vec<String> = std::fs::read_dir(ROUTES_DIR)
+        let mut out: Vec<String> = std::fs::read_dir(routes_dir())
             .into_iter()
             .flatten()
             .flatten()

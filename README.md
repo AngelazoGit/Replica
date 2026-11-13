@@ -25,7 +25,21 @@ tamaño o el juego todavía está cargando.
   suelta todas las teclas y botones pulsados.
 - **Rutas en JSON** legibles y editables a mano.
 
-## Instalación
+## Descarga (Windows, portable)
+
+1. Descarga `Replica-v0.1.0-windows-x64-portable.zip` desde
+   [Releases](https://github.com/AngelazoGit/Replica/releases/latest).
+2. Descomprímelo donde quieras (escritorio, USB, otra unidad…) y abre `Replica\Replica.exe`.
+
+No necesita instalación ni dependencias: solo Windows 10 u 11 de 64 bits. Es **portable**: las rutas
+se guardan en la carpeta `routes\` junto al `.exe`, así que para llevártelo a otro PC basta con
+copiar la carpeta entera. El zip ya trae las rutas de ejemplo.
+
+> Windows SmartScreen puede avisar porque el `.exe` no está firmado: pulsa *Más información →
+> Ejecutar de todas formas*. Si el juego se ejecuta como administrador, abre Replica también como
+> administrador; si no, Windows bloquea los clics simulados.
+
+## Compilar desde el código
 
 Necesitas [Rust](https://rustup.rs) (1.85 o superior).
 
@@ -34,6 +48,9 @@ git clone https://github.com/AngelazoGit/Replica.git
 cd Replica
 cargo run --release
 ```
+
+Las rutas se guardan en `routes/` junto al ejecutable; con `cargo run --release` es
+`target/release/routes/`.
 
 ### Requisitos por sistema
 
@@ -67,17 +84,17 @@ sudo apt install libx11-dev libxtst-dev libxi-dev libdbus-1-dev libxkbcommon-x11
 
 ## Ejemplos
 
-En [`examples/routes`](examples/routes) hay tres rutas listas para probar. Cópialas a la carpeta
-`routes/` (junto al ejecutable, o en la raíz del proyecto si usas `cargo run`):
+En [`examples/routes`](examples/routes) hay tres rutas listas para probar. El zip portable ya
+las incluye. Si compilas desde el código, cópialas a la carpeta `routes/` junto al ejecutable:
 
 ```bash
-cp -r examples/routes routes
+cp -r examples/routes target/release/routes
 ```
 
 En Windows (PowerShell):
 
 ```powershell
-Copy-Item -Recurse examples\routes routes
+Copy-Item -Recurse examples\routes target\release\routes
 ```
 
 Pulsa **⟳ refrescar** en Replica y aparecerán en la lista.
@@ -184,6 +201,23 @@ Cada ruta es una carpeta en `routes/` con un `route.json` y las anclas en PNG:
 | [`src/theme.rs`](src/theme.rs) | Estética: paleta «Sodio y Ultravioleta» y efectos HUD. |
 | [`examples/drive.rs`](examples/drive.rs) | Simulador de entrada para pruebas de extremo a extremo. |
 | [`examples/routes`](examples/routes) | Rutas de ejemplo. |
+
+### Generar el `.exe` de Windows desde Linux
+
+```bash
+rustup target add x86_64-pc-windows-gnu
+```
+
+```bash
+sudo apt install gcc-mingw-w64-x86-64
+```
+
+```bash
+cargo build --release --target x86_64-pc-windows-gnu
+```
+
+El resultado, `target/x86_64-pc-windows-gnu/release/replica.exe`, solo depende de DLL del sistema.
+En Windows basta con `cargo build --release`.
 
 ## Pruebas
 
