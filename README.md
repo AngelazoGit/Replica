@@ -219,6 +219,19 @@ cargo build --release --target x86_64-pc-windows-gnu
 El resultado, `target/x86_64-pc-windows-gnu/release/replica.exe`, solo depende de DLL del sistema.
 En Windows basta con `cargo build --release`.
 
+### Publicar una versión
+
+Las Releases se generan solas con GitHub Actions ([`release.yml`](.github/workflows/release.yml)):
+al subir una etiqueta `vX.Y.Z`, compila en Windows, pasa los tests y publica el zip portable.
+
+```bash
+git tag v0.1.1
+```
+
+```bash
+git push origin v0.1.1
+```
+
 ## Pruebas
 
 ```bash

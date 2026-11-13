@@ -1,0 +1,58 @@
+# Al subir una etiqueta vX.Y.Z: compila en Windows, pasa los tests y publica
+# la Release con el zip portable (Replica.exe + rutas de ejemplo + LEEME + licencia).
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows-portable:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Tests
+        run: cargo test --release
+
+      - name: Compilar
+        run: cargo build --release
+
+      - name: Empaquetar zip portable
+        shell: pwsh
+        run: |
+          $zip = "Replica-${{ github.ref_name }}-windows-x64-portable.zip"
+          New-Item -ItemType Directory Replica | Out-Null
+          Copy-Item target/release/replica.exe Replica/Replica.exe
+          Copy-Item -Recurse examples/routes Replica/routes
+          Copy-Item LICENSE Replica/LICENSE.txt
+          Copy-Item dist/LEEME.txt Replica/LEEME.txt
+          Compress-Archive -Path Replica -DestinationPath $zip
+          $sha = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          "ZIP=$zip" | Out-File -Append $env:GITHUB_ENV
+          "SHA=$sha" | Out-File -Append $env:GITHUB_ENV
+
+      - name: Publicar Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Replica ${{ github.ref_name }}
+          files: ${{ env.ZIP }}
+          body: |
+            ## Descarga
+            **Windows 10/11 (64 bits), portable:** `${{ env.ZIP }}`. Descomprime y abre `Replica\Replica.exe`.
+            Sin instalación; las rutas se guardan en `routes\` junto al .exe. Incluye tres rutas de ejemplo.
+
+            ## Qué incluye
+            - Grabación de teclado y ratón con F9, reproducción con F10, corte de emergencia con F12.
+            - Anclas visuales: busca en pantalla lo que había bajo cada clic antes de clicar.
+            - Rutas independientes de la resolución: se adaptan a la posición y tamaño actuales de la ventana.
+            - Repeticiones, velocidad, humanización y editor de pasos (texto, Enter, ejecutar programas, esperas).
+
+            Linux y macOS: compilar desde el código (ver README).
+
+            SHA-256 del zip: `${{ env.SHA }}`

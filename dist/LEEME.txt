@@ -1,0 +1,37 @@
+REPLICA - versión portable para Windows 10/11 (64 bits)
+=======================================================
+
+No necesita instalación. Descomprime la carpeta donde quieras
+(escritorio, USB, otra unidad...) y abre Replica.exe.
+
+Todo se guarda dentro de esta carpeta:
+  Replica.exe   el programa
+  routes\       tus rutas grabadas (y tres de ejemplo)
+Para llevártelo a otro PC, copia la carpeta entera.
+
+ATAJOS
+  F9   empezar / terminar la grabación
+  F10  reproducir / parar la ruta cargada
+  F12  corte de emergencia (suelta todas las teclas)
+
+USO RÁPIDO
+  1. Escribe un nombre para la ruta en el panel RUTAS.
+  2. Ve al juego o programa y pulsa F9.
+  3. Haz la tarea una vez.
+  4. Pulsa F9 otra vez: la ruta se guarda en routes\.
+  5. Elige repeticiones (0 = infinito) y pulsa F10.
+
+AVISOS
+  - Windows SmartScreen puede avisar porque el .exe no está firmado:
+    pulsa "Más información" > "Ejecutar de todas formas".
+  - Algunos antivirus desconfían de cualquier programa que simule
+    teclado y ratón. Es normal en herramientas de macros.
+  - Si el juego se ejecuta como administrador, abre también
+    Replica.exe como administrador, o Windows bloqueará los clics.
+  - Muchos juegos online prohíben bots y macros en sus normas.
+    Úsalo bajo tu responsabilidad.
+
+Código fuente, documentación y novedades:
+  https://github.com/AngelazoGit/Replica
+
+Licencia MIT (ver LICENSE.txt).
