@@ -222,7 +222,8 @@ En Windows basta con `cargo build --release`.
 ### Publicar una versión
 
 Las Releases se generan solas con GitHub Actions ([`release.yml`](.github/workflows/release.yml)):
-al subir una etiqueta `vX.Y.Z`, compila en Windows, pasa los tests y publica el zip portable.
+compila en Windows, pasa los tests y publica el zip portable. Se lanza desde la web
+(**Actions → Release → Run workflow**, indicando la versión) o subiendo una etiqueta:
 
 ```bash
 git tag v0.1.1

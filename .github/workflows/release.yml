@@ -1,13 +1,23 @@
-# Al subir una etiqueta vX.Y.Z: compila en Windows, pasa los tests y publica
-# la Release con el zip portable (Replica.exe + rutas de ejemplo + LEEME + licencia).
+# Compila en Windows, pasa los tests y publica la Release con el zip portable
+# (Replica.exe + rutas de ejemplo + LEEME + licencia). Se lanza al subir una
+# etiqueta vX.Y.Z o a mano desde Actions → Release → Run workflow.
 name: Release
 
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versión a publicar (se crea la etiqueta si no existe)"
+        required: true
+        default: "v0.1.0"
 
 permissions:
   contents: write
+
+env:
+  VERSION: ${{ inputs.version || github.ref_name }}
 
 jobs:
   windows-portable:
@@ -26,7 +36,7 @@ jobs:
       - name: Empaquetar zip portable
         shell: pwsh
         run: |
-          $zip = "Replica-${{ github.ref_name }}-windows-x64-portable.zip"
+          $zip = "Replica-$env:VERSION-windows-x64-portable.zip"
           New-Item -ItemType Directory Replica | Out-Null
           Copy-Item target/release/replica.exe Replica/Replica.exe
           Copy-Item -Recurse examples/routes Replica/routes
@@ -40,7 +50,9 @@ jobs:
       - name: Publicar Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Replica ${{ github.ref_name }}
+          tag_name: ${{ env.VERSION }}
+          target_commitish: ${{ github.sha }}
+          name: Replica ${{ env.VERSION }}
           files: ${{ env.ZIP }}
           body: |
             ## Descarga
