@@ -1,0 +1,4 @@
+# Runtime de C enlazado dentro del .exe: así no depende de VCRUNTIME140.dll
+# (el redistribuible de Visual C++ no viene en todos los Windows) y es portable de verdad.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

@@ -33,6 +33,15 @@ jobs:
       - name: Compilar
         run: cargo build --release
 
+      - name: Comprobar que no depende del runtime de Visual C++
+        shell: pwsh
+        run: |
+          $dumpbin = Get-ChildItem "${env:ProgramFiles}\Microsoft Visual Studio" -Recurse -Filter dumpbin.exe |
+            Where-Object FullName -like "*Hostx64\x64*" | Select-Object -First 1
+          $deps = & $dumpbin.FullName /dependents target/release/replica.exe
+          $deps
+          if ($deps -match "VCRUNTIME|api-ms-win-crt") { throw "El .exe depende del runtime de Visual C++: no sería portable" }
+
       - name: Empaquetar zip portable
         shell: pwsh
         run: |
