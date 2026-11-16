@@ -27,7 +27,7 @@ tamaño o el juego todavía está cargando.
 
 ## Descarga (Windows, portable)
 
-1. Descarga `Replica-v0.1.0-windows-x64-portable.zip` desde
+1. Descarga `Replica-vX.Y.Z-windows-x64-portable.zip` (la versión más reciente) desde
    [Releases](https://github.com/AngelazoGit/Replica/releases/latest).
 2. Descomprímelo donde quieras (escritorio, USB, otra unidad…) y abre `Replica\Replica.exe`.
 
