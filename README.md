@@ -77,7 +77,10 @@ sudo apt install libx11-dev libxtst-dev libxi-dev libdbus-1-dev libxkbcommon-x11
 |---|---|
 | `F9` | Empezar / terminar la grabación |
 | `F10` | Reproducir / parar la ruta cargada |
-| `F12` | Corte de emergencia |
+| `F12` | Corte de emergencia: para la ruta y suelta teclas y botones |
+
+Cerrar Replica mientras reproduce también para la ruta y suelta lo que estuviera pulsado.
+`F12` no cierra los programas que la ruta ya haya abierto con *ejecutar programa*.
 
 > Consejo: usa los atajos en lugar de los botones de la app para no grabar el paso de ir a Replica a pulsar.
 > Si grabas con un nombre que ya existe, Replica crea `nombre_2`, `nombre_3`… y nunca sobrescribe.
@@ -101,7 +104,7 @@ Pulsa **⟳ refrescar** en Replica y aparecerán en la lista.
 
 | Ruta | Qué hace | Para probarla |
 |---|---|---|
-| [`nota_rapida`](examples/routes/nota_rapida/route.json) | Abre el Bloc de notas y escribe un mensaje. | Pulsa `F10` en Windows. En Linux/macOS cambia `notepad.exe` por `gedit` u `open -a TextEdit` en el editor. |
+| [`nota_rapida`](examples/routes/nota_rapida/route.json) | Abre el Bloc de notas y escribe un mensaje. | Pulsa **permitir** (ejecuta un programa) y luego `F10` en Windows. En Linux/macOS cambia `notepad.exe` por `gedit` u `open -a TextEdit` en el editor. |
 | [`comando_chat`](examples/routes/comando_chat/route.json) | Abre el chat con `T`, escribe `/home` y pulsa Enter. Útil en juegos tipo sandbox. | Pon el juego en primer plano y pulsa `F10`. |
 | [`farmeo_cuadrado`](examples/routes/farmeo_cuadrado/route.json) | Camina en cuadrado con `W` `D` `S` `A`, interactúa con `E` y salta. | Pon repeticiones a `0` (infinito), entra al juego y pulsa `F10`. |
 
@@ -137,6 +140,13 @@ de escritorio no, Replica prueba el recorte escalado y el original y se queda co
 Si la detección automática no acierta, elige la ventana correcta en el selector **VENTANA**,
 o *pantalla completa* para usar coordenadas absolutas.
 
+### Rutas que ejecutan programas
+
+Una ruta puede lanzar programas o comandos del sistema (*ejecutar programa*). Al cargar una ruta
+que lo hace, Replica muestra la lista de comandos y no la reproduce hasta que pulsas **permitir**.
+Hazlo solo con rutas de alguien de confianza: esos comandos se ejecutan con tus permisos.
+Las rutas que grabas o editas tú no lo piden.
+
 ### Tiempos
 
 La reproducción sigue un reloj absoluto: el tiempo que tarda en simular cada evento no se acumula,
@@ -156,7 +166,7 @@ aparecer), los pasos siguientes no se disparan de golpe.
 | **similitud** | Lo parecido que debe ser el recorte (0,90 = 90 %). Bájalo si hay efectos o animaciones. |
 | **radio px** | Cuánto puede haberse desplazado el elemento respecto a donde estaba. |
 | **esperar ancla** | Tiempo máximo esperando a que aparezca el recorte. |
-| **si no aparece** | `clicar` en la posición grabada o `detener` la ruta. |
+| **si no aparece** | Qué hacer cuando no se puede verificar un clic: el recorte no aparece a tiempo, su PNG falta o está dañado, falla la captura o no se encuentra la ventana objetivo. `clicar` sigue con la posición grabada; `detener` para la ruta sin clicar. |
 
 ## Formato de las rutas
 
@@ -239,6 +249,8 @@ git push origin v0.1.1
 cargo test
 ```
 
+Los tests también se ejecutan en Windows con cada cambio ([`ci.yml`](.github/workflows/ci.yml)).
+
 Para una prueba de extremo a extremo, abre Replica y en otra terminal ejecuta el simulador,
 que pulsa `F9`, hace unas acciones, pulsa `F9` y luego `F10`:
 
@@ -262,6 +274,10 @@ cargo run --release --example drive -- play
   orden de las ventanas). Si no acierta, cámbiala en el selector.
 - Mientras grabas se captura la zona del cursor 25 veces por segundo; en monitores 4K puede
   notarse en el uso de CPU.
+- Los clics a menos de 24 px del borde de un monitor se graban sin ancla visual: el recorte no
+  cabría entero y el clic no quedaría en su centro.
+- Replica no comprueba qué ventana tiene el foco. Si cambias de ventana durante la reproducción,
+  las teclas van a la ventana activa; usa `F12` o la política `detener`.
 - Algunos juegos con anti-cheat a nivel de kernel ignoran o detectan la entrada simulada.
 
 ## Uso responsable

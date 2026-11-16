@@ -6,6 +6,7 @@ use crate::vision;
 use image::RgbaImage;
 use rdev::{Button, EventType, Key};
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
@@ -77,13 +78,22 @@ pub struct State {
     hotkey_held: Option<Key>,
     /// Ruta cargada antes de grabar: se recupera si la grabación sale vacía.
     prev_route: Route,
+    /// Identificador de la grabación en curso: los trabajos de anclas de una grabación
+    /// anterior no pueden tocar la actual.
+    rec_id: u64,
+    /// Ventana bajo el primer clic de la grabación `rec_id`.
+    rec_target: Option<Target>,
+    /// Anclas de la grabación `rec_id` que no se pudieron guardar (se quitan de la ruta).
+    rec_bad_anchors: Vec<String>,
+    /// false si la ruta cargada ejecuta programas y el usuario aún no lo ha permitido.
+    pub commands_ok: bool,
 }
 
 /// Fotograma reciente alrededor del cursor: (imagen, x0, y0) en coordenadas globales.
 type Frame = Arc<(RgbaImage, i32, i32)>;
 
-/// Petición de guardar un ancla: punto del clic, PNG destino y fotograma previo al clic.
-type AnchorJob = (f64, f64, std::path::PathBuf, Option<Frame>);
+/// Petición de guardar un ancla: grabación, punto del clic, PNG destino y fotograma previo al clic.
+type AnchorJob = (u64, f64, f64, std::path::PathBuf, Option<Frame>);
 
 /// Lado del fotograma que se captura continuamente alrededor del cursor al grabar.
 const FRAME_SIZE: u32 = 256;
@@ -94,6 +104,10 @@ pub struct Bot {
     repaint: Mutex<Option<eframe::egui::Context>>,
     anchor_tx: Mutex<mpsc::Sender<AnchorJob>>,
     frame: Mutex<Option<Frame>>,
+    /// Anclas en cola o procesándose.
+    pending: AtomicUsize,
+    /// Guardando una grabación (esperando sus anclas): no se puede reproducir ni grabar.
+    saving: AtomicBool,
 }
 
 impl Bot {
@@ -102,10 +116,8 @@ impl Bot {
         let bot = Arc::new(Bot {
             state: Mutex::new(State {
                 mode: Mode::Idle,
-                route: Route {
-                    name: "nueva_ruta".into(),
-                    ..Default::default()
-                },
+                // Sin nombre: si no, aparecería marcada en la lista una ruta guardada que no está cargada.
+                route: Route::default(),
                 settings: Settings::default(),
                 record_name: "nueva_ruta".into(),
                 log: VecDeque::new(),
@@ -115,38 +127,53 @@ impl Bot {
                 last_move_at: Instant::now(),
                 hotkey_held: None,
                 prev_route: Route::default(),
+                rec_id: 0,
+                rec_target: None,
+                rec_bad_anchors: vec![],
+                commands_ok: true,
             }),
             stop: AtomicBool::new(false),
             repaint: Mutex::new(None),
             anchor_tx: Mutex::new(tx),
             frame: Mutex::new(None),
+            pending: AtomicUsize::new(0),
+            saving: AtomicBool::new(false),
         });
 
         // Hilo que guarda anclas visuales sin bloquear la escucha de entrada.
         let b = bot.clone();
         thread::spawn(move || {
-            for (x, y, path, frame) in rx {
-                if !path.parent().is_some_and(|d| d.exists()) {
-                    continue; // grabación vacía ya descartada (su carpeta se borró)
-                }
-                // Preferimos el fotograma de antes del clic; si no contiene el punto, captura en vivo.
-                let img = match frame.and_then(|f| vision::anchor_from_frame(&f, x, y)) {
-                    Some(img) => Ok(img),
-                    None => vision::capture_anchor(x, y),
-                };
-                if let Err(e) = img.and_then(|img| Ok(img.save(&path)?)) {
-                    b.log(format!("No se pudo capturar ancla: {e}"));
-                }
-                // Ventana objetivo = la que está bajo el primer clic, detectada al momento
-                // (al parar la grabación podría haberse movido o cerrado).
-                let first = b.state.lock().unwrap().route.target.is_none();
-                if first {
-                    let target = vision::window_at(x, y);
-                    let mut st = b.state.lock().unwrap();
-                    if st.mode == Mode::Recording && st.route.target.is_none() {
-                        st.route.target = target;
+            for (rec_id, x, y, path, frame) in rx {
+                // Grabación vacía ya descartada: su carpeta se borró.
+                if path.parent().is_some_and(|d| d.exists()) {
+                    // Preferimos el fotograma de antes del clic; si no contiene el punto, captura en vivo.
+                    let img = match frame.and_then(|f| vision::anchor_from_frame(&f, x, y)) {
+                        Some(img) => Ok(img),
+                        None => vision::capture_anchor(x, y),
+                    };
+                    if let Err(e) = img.and_then(|img| Ok(img.save(&path)?)) {
+                        b.log(format!("Clic sin ancla visual: {e}"));
+                        let mut st = b.state.lock().unwrap();
+                        if st.rec_id == rec_id {
+                            let file = path.file_name().unwrap().to_string_lossy().into_owned();
+                            st.rec_bad_anchors.push(file);
+                        }
+                    }
+                    // Ventana objetivo = la que está bajo el primer clic, detectada al momento
+                    // (al parar la grabación podría haberse movido o cerrado).
+                    let need = {
+                        let st = b.state.lock().unwrap();
+                        st.rec_id == rec_id && st.rec_target.is_none()
+                    };
+                    if need {
+                        let target = vision::window_at(x, y);
+                        let mut st = b.state.lock().unwrap();
+                        if st.rec_id == rec_id && st.rec_target.is_none() {
+                            st.rec_target = target;
+                        }
                     }
                 }
+                b.pending.fetch_sub(1, Ordering::SeqCst);
             }
         });
 
@@ -258,7 +285,16 @@ impl Bot {
                 let file = format!("anchor_{:04}.png", st.route.steps.len());
                 let path = Route::dir(&st.route.name).join(&file);
                 let frame = self.frame.lock().unwrap().clone();
-                let _ = self.anchor_tx.lock().unwrap().send((x, y, path, frame));
+                self.pending.fetch_add(1, Ordering::SeqCst);
+                if self
+                    .anchor_tx
+                    .lock()
+                    .unwrap()
+                    .send((st.rec_id, x, y, path, frame))
+                    .is_err()
+                {
+                    self.pending.fetch_sub(1, Ordering::SeqCst);
+                }
                 Action::ButtonDown {
                     button,
                     x,
@@ -299,6 +335,10 @@ impl Bot {
                 drop(st);
                 self.log("Para la reproducción antes de grabar (F12).");
             }
+            Mode::Idle if self.saving.load(Ordering::SeqCst) => {
+                drop(st);
+                self.log("Terminando de guardar la grabación anterior…");
+            }
             Mode::Idle => {
                 // Nunca pisar una ruta existente: nombre, nombre_2, nombre_3…
                 let base = crate::model::sanitize(&st.record_name);
@@ -323,6 +363,10 @@ impl Bot {
                 {
                     st.mouse = (x as f64, y as f64);
                 }
+                st.rec_id += 1;
+                st.rec_target = None;
+                st.rec_bad_anchors.clear();
+                st.commands_ok = true; // lo que graba el propio usuario
                 st.mode = Mode::Recording;
                 st.last_step_at = Instant::now();
                 drop(st);
@@ -342,22 +386,50 @@ impl Bot {
                     self.log("Grabación vacía: no se guarda nada.");
                     return self.repaint();
                 }
-                // Los PNG de anclas los sigue escribiendo su hilo; route.json no depende de ellos.
-                match route.save() {
-                    Ok(()) => self.log(format!(
-                        "■ Ruta '{}' guardada: {} pasos, {:.1} s. {}",
-                        route.name,
-                        route.steps.len(),
-                        route.duration_ms() as f64 / 1000.0,
-                        match &route.target {
-                            Some(t) => format!("Ventana objetivo: {}", t.label()),
-                            None => "Sin ventana objetivo: coordenadas de pantalla.".into(),
-                        }
-                    )),
-                    Err(e) => self.log(format!("Error guardando ruta: {e}")),
-                }
+                // Guardar cuando terminen sus anclas (en otro hilo: este puede ser el hook de teclado,
+                // que no debe bloquearse). Mientras, no se puede reproducir ni grabar.
+                self.saving.store(true, Ordering::SeqCst);
+                let bot = self.clone();
+                thread::spawn(move || bot.finish_recording(route));
+                return;
             }
         }
+        self.repaint();
+    }
+
+    /// Espera a las anclas pendientes, completa la ruta con la ventana objetivo
+    /// y las anclas fallidas, y la guarda.
+    fn finish_recording(self: &Arc<Self>, mut route: Route) {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while self.pending.load(Ordering::SeqCst) > 0 && Instant::now() < deadline {
+            thread::sleep(Duration::from_millis(10));
+        }
+        {
+            let mut st = self.state.lock().unwrap();
+            let (target, bad) = (
+                st.rec_target.clone(),
+                std::mem::take(&mut st.rec_bad_anchors),
+            );
+            finish_route(&mut route, target, &bad);
+            if st.route.name == route.name {
+                // Conserva ediciones hechas en el editor mientras se guardaba.
+                finish_route(&mut st.route, route.target.clone(), &bad);
+            }
+        }
+        match route.save() {
+            Ok(()) => self.log(format!(
+                "■ Ruta '{}' guardada: {} pasos, {:.1} s. {}",
+                route.name,
+                route.steps.len(),
+                route.duration_ms() as f64 / 1000.0,
+                match &route.target {
+                    Some(t) => format!("Ventana objetivo: {}", t.label()),
+                    None => "Sin ventana objetivo: coordenadas de pantalla.".into(),
+                }
+            )),
+            Err(e) => self.log(format!("Error guardando ruta: {e}")),
+        }
+        self.saving.store(false, Ordering::SeqCst);
         self.repaint();
     }
 
@@ -375,9 +447,21 @@ impl Bot {
                 self.log("Termina la grabación primero (F9).");
             }
             Mode::Idle => {
+                if self.saving.load(Ordering::SeqCst) {
+                    drop(st);
+                    return self.log("Terminando de guardar la grabación…");
+                }
                 if st.route.steps.is_empty() {
                     drop(st);
                     return self.log("La ruta está vacía: graba o carga una.");
+                }
+                let commands = st.route.commands();
+                if !commands.is_empty() && !st.commands_ok {
+                    drop(st);
+                    return self.log(format!(
+                        "Esta ruta ejecuta programas: {}. Revísalos y pulsa «permitir» antes de reproducir.",
+                        commands.join(" · ")
+                    ));
                 }
                 st.mode = Mode::Playing;
                 let route = st.route.clone();
@@ -416,6 +500,18 @@ impl Bot {
         }
     }
 
+    /// Al cerrar la app: para la reproducción y espera a que suelte teclas y botones,
+    /// y a que se guarde una grabación en curso.
+    pub fn shutdown(self: &Arc<Self>) {
+        self.stop_all();
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while (self.mode() == Mode::Playing || self.saving.load(Ordering::SeqCst))
+            && Instant::now() < deadline
+        {
+            thread::sleep(Duration::from_millis(10));
+        }
+    }
+
     fn stopped(&self) -> bool {
         self.stop.load(Ordering::SeqCst)
     }
@@ -423,6 +519,19 @@ impl Bot {
     fn set_progress(&self, p: String) {
         self.state.lock().unwrap().progress = p;
         self.repaint();
+    }
+}
+
+/// Pone la ventana objetivo y quita las anclas que no se pudieron guardar
+/// (sin PNG, la reproducción las trataría como ancla perdida).
+fn finish_route(route: &mut Route, target: Option<Target>, bad_anchors: &[String]) {
+    route.target = target;
+    for s in &mut route.steps {
+        if let Action::ButtonDown { anchor, .. } = &mut s.action {
+            if anchor.as_ref().is_some_and(|a| bad_anchors.contains(a)) {
+                *anchor = None;
+            }
+        }
     }
 }
 
@@ -560,14 +669,19 @@ impl<'a> Player<'a> {
         self.sleep_until(end)
     }
 
+    /// Espera hasta `end` comprobando F12. Comprueba aunque no haya que esperar:
+    /// si no, una ruta de pasos sin retardo nunca vería la parada.
     fn sleep_until(&self, end: Instant) -> anyhow::Result<()> {
-        while Instant::now() < end {
+        loop {
             if self.bot.stopped() {
                 anyhow::bail!("Detenido por el usuario.");
             }
-            thread::sleep((end - Instant::now()).min(Duration::from_millis(20)));
+            let now = Instant::now();
+            if now >= end {
+                return Ok(());
+            }
+            thread::sleep((end - now).min(Duration::from_millis(20)));
         }
-        Ok(())
     }
 
     fn send(&self, ev: EventType) {
@@ -582,7 +696,7 @@ impl<'a> Player<'a> {
         let mut lap = 0u32;
         loop {
             lap += 1;
-            self.locate_window(lap == 1); // cada vuelta: la ventana puede haberse movido o redimensionado
+            self.locate_window(lap == 1)?;
             let total = if self.cfg.loops == 0 {
                 "∞".to_string()
             } else {
@@ -625,7 +739,11 @@ impl<'a> Player<'a> {
                 y,
                 anchor,
             } => {
+                self.locate_window(false)?; // la ventana puede haberse movido a mitad de vuelta
                 let (mut px, mut py) = self.map(*x, *y);
+                if self.bot.stopped() {
+                    anyhow::bail!("Detenido por el usuario.");
+                }
                 if self.cfg.use_anchors {
                     if let Some(file) = anchor {
                         (px, py) = self.locate_anchor(file, px, py)?;
@@ -698,12 +816,16 @@ impl<'a> Player<'a> {
         Ok(())
     }
 
-    /// Busca la ventana objetivo y avisa si cambió de tamaño o no está.
-    fn locate_window(&mut self, first: bool) {
+    /// Busca la ventana objetivo y avisa si cambió de tamaño. Si no está, aplica la
+    /// misma política que con un ancla perdida (detener o seguir con las coordenadas grabadas).
+    fn locate_window(&mut self, first: bool) -> anyhow::Result<()> {
         let Some(rec) = &self.route.target else {
-            return;
+            return Ok(());
         };
         let now = vision::find_window(rec);
+        if now.is_none() && self.cfg.on_missing == MissingAnchor::Stop {
+            anyhow::bail!("No encuentro la ventana de '{}'. Ruta detenida.", rec.app);
+        }
         if first || now != self.window_now {
             let msg = match &now {
                 Some(n) if n == rec => format!("Ventana objetivo: {}", n.label()),
@@ -722,6 +844,7 @@ impl<'a> Player<'a> {
             self.bot.log(msg);
         }
         self.window_now = now;
+        Ok(())
     }
 
     /// Coordenadas grabadas → coordenadas actuales según la ventana objetivo.
@@ -748,7 +871,9 @@ impl<'a> Player<'a> {
             .entry(file.to_string())
             .or_insert_with(|| image::open(&path).ok().map(|i| i.to_rgba8()))
             .clone();
-        let Some(tpl) = tpl else { return Ok((x, y)) }; // sin ancla guardada
+        let Some(tpl) = tpl else {
+            return self.anchor_missing(&format!("No se puede leer el ancla {file}"), x, y);
+        };
         // Otra resolución: los juegos escalan su interfaz con la ventana y las apps de
         // escritorio no, así que se prueba el ancla escalada y la original.
         let (sx, sy) = self.scale();
@@ -781,27 +906,29 @@ impl<'a> Player<'a> {
                 }
                 Ok(m) => best = best.max(m.score),
                 Err(e) => {
-                    self.bot.log(format!(
-                        "Captura de pantalla falló ({e}); clic sin verificar."
-                    ));
-                    return Ok((x, y));
+                    return self.anchor_missing(&format!("Captura de pantalla falló ({e})"), x, y);
                 }
             }
             if Instant::now() >= deadline {
-                return match self.cfg.on_missing {
-                    MissingAnchor::ClickAnyway => {
-                        self.bot.log(format!("Ancla {file} no encontrada (mejor {best:.2}); clic en posición grabada."));
-                        Ok((x, y))
-                    }
-                    MissingAnchor::Stop => anyhow::bail!(
-                        "Ancla {file} no apareció en pantalla (mejor {best:.2}). Ruta detenida."
-                    ),
-                };
+                let why = format!("Ancla {file} no apareció en pantalla (mejor {best:.2})");
+                return self.anchor_missing(&why, x, y);
             }
             if self.bot.stopped() {
                 anyhow::bail!("Detenido por el usuario.");
             }
             thread::sleep(Duration::from_millis(150));
+        }
+    }
+
+    /// Política única para cualquier fallo de verificación visual: con «detener»
+    /// nunca se clica sin verificar.
+    fn anchor_missing(&self, why: &str, x: f64, y: f64) -> anyhow::Result<(f64, f64)> {
+        match self.cfg.on_missing {
+            MissingAnchor::Stop => anyhow::bail!("{why}. Ruta detenida."),
+            MissingAnchor::ClickAnyway => {
+                self.bot.log(format!("{why}; clic en la posición grabada."));
+                Ok((x, y))
+            }
         }
     }
 
@@ -936,6 +1063,121 @@ mod tests {
         ];
         clean_recording(&mut steps, true);
         assert_eq!(steps.len(), 2);
+    }
+
+    fn route(steps: Vec<Action>, target: Option<Target>) -> Route {
+        Route {
+            name: "__test_inexistente__".into(),
+            target,
+            steps: steps
+                .into_iter()
+                .map(|action| Step {
+                    delay_ms: 0,
+                    action,
+                })
+                .collect(),
+        }
+    }
+
+    /// Ejecuta la ruta en otro hilo y devuelve su resultado, o None si no termina en 3 s.
+    fn run_with_timeout(bot: &Arc<Bot>, r: Route, cfg: Settings) -> Option<anyhow::Result<()>> {
+        let (tx, rx) = mpsc::channel();
+        let bot = bot.clone();
+        thread::spawn(move || {
+            let _ = tx.send(Player::new(&bot, &r, &cfg).run());
+        });
+        rx.recv_timeout(Duration::from_secs(3)).ok()
+    }
+
+    #[test]
+    fn stop_works_without_any_delay() {
+        // Bucle infinito de pasos sin retardo: antes F12 nunca se comprobaba y no paraba.
+        let bot = Bot::new();
+        bot.stop.store(true, Ordering::SeqCst);
+        let cfg = Settings {
+            loops: 0,
+            pause_between_loops_ms: 0,
+            humanize: false,
+            ..Default::default()
+        };
+        let r = route(vec![Action::Wait { ms: 0 }], None);
+        let result = run_with_timeout(&bot, r, cfg).expect("la reproducción no se detuvo");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn unreadable_anchor_respects_stop_policy() {
+        let bot = Bot::new();
+        let r = route(vec![], None);
+        let stop = Settings {
+            on_missing: MissingAnchor::Stop,
+            ..Default::default()
+        };
+        assert!(
+            Player::new(&bot, &r, &stop)
+                .locate_anchor("falta.png", 10.0, 20.0)
+                .is_err()
+        );
+        let click = Settings {
+            on_missing: MissingAnchor::ClickAnyway,
+            ..Default::default()
+        };
+        let pos = Player::new(&bot, &r, &click)
+            .locate_anchor("falta.png", 10.0, 20.0)
+            .unwrap();
+        assert_eq!(pos, (10.0, 20.0));
+    }
+
+    #[test]
+    fn missing_target_window_respects_stop_policy() {
+        let bot = Bot::new();
+        let target = Target {
+            app: "__app_inexistente__".into(),
+            w: 100,
+            h: 100,
+            ..Default::default()
+        };
+        let r = route(vec![Action::Wait { ms: 0 }], Some(target));
+        let cfg = Settings {
+            on_missing: MissingAnchor::Stop,
+            ..Default::default()
+        };
+        let result = run_with_timeout(&bot, r, cfg).expect("no terminó");
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("No encuentro la ventana")
+        );
+    }
+
+    #[test]
+    fn finish_route_sets_target_and_drops_failed_anchors() {
+        let click = |a: &str| Action::ButtonDown {
+            button: Button::Left,
+            x: 0.0,
+            y: 0.0,
+            anchor: Some(a.into()),
+        };
+        let mut r = route(
+            vec![click("anchor_0000.png"), click("anchor_0002.png")],
+            None,
+        );
+        let t = Target {
+            app: "juego".into(),
+            ..Default::default()
+        };
+        finish_route(&mut r, Some(t.clone()), &["anchor_0002.png".into()]);
+        assert_eq!(r.target, Some(t));
+        let anchors: Vec<_> = r
+            .steps
+            .iter()
+            .map(|s| match &s.action {
+                Action::ButtonDown { anchor, .. } => anchor.clone(),
+                _ => unreachable!(),
+            })
+            .collect();
+        assert_eq!(anchors, vec![Some("anchor_0000.png".to_string()), None]);
     }
 
     #[test]

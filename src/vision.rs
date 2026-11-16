@@ -94,8 +94,14 @@ pub fn find_window(t: &Target) -> Option<Target> {
     same_app
         .iter()
         .find(|w| w.title == t.title)
-        .or(same_app.first())
+        // Varias ventanas de la app y ninguna con el mismo título: la más parecida a la grabada.
+        .or_else(|| same_app.iter().min_by_key(|w| window_distance(w, t)))
         .cloned()
+}
+
+/// Diferencia de posición y tamaño entre dos ventanas (en píxeles).
+fn window_distance(a: &Target, b: &Target) -> u32 {
+    (a.x - b.x).unsigned_abs() + (a.y - b.y).unsigned_abs() + a.w.abs_diff(b.w) + a.h.abs_diff(b.h)
 }
 
 /// Recorta el ancla de un fotograma ya capturado `(img, x0, y0)` si la contiene entera.
@@ -112,10 +118,17 @@ pub fn anchor_from_frame(frame: &(RgbaImage, i32, i32), cx: f64, cy: f64) -> Opt
     })
 }
 
-/// Recorte centrado en un punto (para crear anclas al grabar).
+/// Recorte centrado en un punto (para crear anclas al grabar). Falla si el recorte
+/// no cabe entero en el monitor: recortado, el clic ya no estaría en su centro.
 pub fn capture_anchor(cx: f64, cy: f64) -> anyhow::Result<RgbaImage> {
     let half = (ANCHOR_SIZE / 2) as i32;
-    Ok(capture_region(cx as i32 - half, cy as i32 - half, ANCHOR_SIZE, ANCHOR_SIZE)?.0)
+    let (x, y) = (cx as i32 - half, cy as i32 - half);
+    let (img, ox, oy) = capture_region(x, y, ANCHOR_SIZE, ANCHOR_SIZE)?;
+    anyhow::ensure!(
+        (ox, oy) == (x, y) && img.dimensions() == (ANCHOR_SIZE, ANCHOR_SIZE),
+        "clic en ({cx:.0}, {cy:.0}) demasiado cerca del borde del monitor"
+    );
+    Ok(img)
 }
 
 pub struct Match {

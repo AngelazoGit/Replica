@@ -73,6 +73,11 @@ fn panel_frame(fill: Color32) -> egui::Frame {
 }
 
 impl eframe::App for App {
+    /// Al cerrar: parar y soltar teclas/botones antes de que termine el proceso.
+    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+        self.bot.shutdown();
+    }
+
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let bot = self.bot.clone();
         let mode = bot.mode();
@@ -263,6 +268,7 @@ impl eframe::App for App {
                                         Ok(r) => {
                                             let mut st = bot.state.lock().unwrap();
                                             st.record_name = r.name.clone();
+                                            st.commands_ok = r.commands().is_empty();
                                             st.route = r;
                                             drop(st);
                                             bot.log(format!("Ruta '{name}' cargada."));
@@ -320,7 +326,7 @@ impl eframe::App for App {
             };
             ui.horizontal(|ui| {
                 ui.label(RichText::new("RUTA").small().color(DIM));
-                ui.label(RichText::new(name.to_uppercase()).heading().color(SODIUM));
+                ui.label(RichText::new(if name.is_empty() { "SIN CARGAR".into() } else { name.to_uppercase() }).heading().color(SODIUM));
                 ui.label(RichText::new(format!("{n} pasos · {secs:.1} s")).monospace().color(DIM));
             });
             ui.add_enabled_ui(editable, |ui| {
@@ -400,6 +406,7 @@ impl eframe::App for App {
                     );
                     if ui.button("+ ejecutar programa").clicked() && !self.new_cmd.trim().is_empty() {
                         push(&bot, Action::RunCommand { command: self.new_cmd.clone() });
+                        bot.state.lock().unwrap().commands_ok = true; // lo añade el propio usuario
                     }
                     ui.add(egui::DragValue::new(&mut self.new_wait).suffix(" ms"));
                     if ui.button("+ esperar").clicked() {
@@ -407,23 +414,54 @@ impl eframe::App for App {
                     }
                 });
             });
+            let (commands, commands_ok) = {
+                let st = bot.state.lock().unwrap();
+                (st.route.commands(), st.commands_ok)
+            };
+            if !commands.is_empty() && !commands_ok {
+                ui.add_space(6.0);
+                egui::Frame::none()
+                    .stroke(Stroke::new(1.0_f32, CORAL))
+                    .fill(CORAL.gamma_multiply(0.08))
+                    .inner_margin(Margin::symmetric(10.0, 6.0))
+                    .show(ui, |ui| {
+                        ui.label(RichText::new("⚠ Esta ruta ejecuta programas en tu equipo:").color(CORAL).strong());
+                        for c in &commands {
+                            ui.label(RichText::new(format!("  {c}")).monospace().color(BONE));
+                        }
+                        ui.horizontal(|ui| {
+                            if ui.add(theme::neon_button("permitir", CORAL)).clicked() {
+                                bot.state.lock().unwrap().commands_ok = true;
+                                bot.log("Programas de la ruta permitidos.");
+                            }
+                            ui.label(RichText::new("solo si confías en quien te pasó la ruta").small().color(DIM));
+                        });
+                    });
+            }
             ui.add_space(6.0);
             theme::section(ui, "SECUENCIA", SODIUM);
 
             let route_name = name;
             let mut delete = None;
             let mut swap = None;
-            egui::ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
-                let steps: Vec<Step> = bot.state.lock().unwrap().route.steps.clone();
-                if steps.is_empty() {
-                    ui.add_space(30.0);
-                    ui.vertical_centered(|ui| {
-                        ui.label(RichText::new("[ sin datos ]").monospace().size(16.0).color(DIM));
-                        ui.label(RichText::new("pulsa F9, juega, y pulsa F9 otra vez").small().color(DIM));
-                    });
-                }
+            let total = bot.state.lock().unwrap().route.steps.len();
+            if total == 0 {
+                ui.add_space(30.0);
+                ui.vertical_centered(|ui| {
+                    ui.label(RichText::new("[ sin datos ]").monospace().size(16.0).color(DIM));
+                    ui.label(RichText::new("pulsa F9, juega, y pulsa F9 otra vez").small().color(DIM));
+                });
+            }
+            // Solo se construyen (y copian) las filas visibles: rutas de decenas de miles de pasos.
+            let row_h = ui.spacing().interact_size.y + 2.0;
+            egui::ScrollArea::vertical().auto_shrink(false).show_rows(ui, row_h, total, |ui, range| {
+                let steps: Vec<Step> = {
+                    let st = bot.state.lock().unwrap();
+                    let end = range.end.min(st.route.steps.len());
+                    st.route.steps[range.start.min(end)..end].to_vec()
+                };
                 let mut changed: Vec<(usize, Step)> = vec![];
-                for (i, step) in steps.iter().enumerate() {
+                for (i, step) in range.zip(steps.iter()) {
                     let (tag_txt, tag_col) = tag(&step.action);
                     let fill = if i % 2 == 0 { PANEL_HI.gamma_multiply(0.6) } else { Color32::TRANSPARENT };
                     egui::Frame::none().fill(fill).inner_margin(Margin::symmetric(6.0, 1.0)).show(ui, |ui| {

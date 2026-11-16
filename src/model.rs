@@ -10,7 +10,9 @@ use std::path::{Path, PathBuf};
 pub fn routes_dir() -> PathBuf {
     static DIR: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
     DIR.get_or_init(|| {
-        let exe_dir = std::env::current_exe().ok().and_then(|p| p.parent().map(Path::to_path_buf));
+        let exe_dir = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(Path::to_path_buf));
         exe_dir.unwrap_or_default().join("routes")
     })
     .clone()
@@ -145,6 +147,17 @@ impl Route {
         Self::dir(&self.name).join(file)
     }
 
+    /// Programas que ejecuta la ruta (para pedir confirmación antes de reproducirla).
+    pub fn commands(&self) -> Vec<String> {
+        self.steps
+            .iter()
+            .filter_map(|s| match &s.action {
+                Action::RunCommand { command } => Some(command.clone()),
+                _ => None,
+            })
+            .collect()
+    }
+
     pub fn duration_ms(&self) -> u64 {
         self.steps.iter().map(|s| s.delay_ms).sum()
     }
@@ -205,6 +218,8 @@ mod tests {
             let json = std::fs::read_to_string(e.unwrap().path().join("route.json")).unwrap();
             let r: Route = serde_json::from_str(&json).unwrap();
             assert!(!r.steps.is_empty());
+            // Solo nota_rapida ejecuta programas (y por eso pide permiso al cargarla).
+            assert_eq!(!r.commands().is_empty(), r.name == "nota_rapida");
             n += 1;
         }
         assert_eq!(n, 3);

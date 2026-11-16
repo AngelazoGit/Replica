@@ -127,8 +127,11 @@ pub fn glitch_title(ui: &mut Ui, text: &str, size: f32) {
         CORAL.gamma_multiply(0.6),
     );
     p.text(rect.min, egui::Align2::LEFT_TOP, text, font, SODIUM);
-    ui.ctx()
-        .request_repaint_after(std::time::Duration::from_millis(120));
+    // Animación solo con la ventana activa: en segundo plano no gasta CPU.
+    if ui.input(|i| i.viewport().focused.unwrap_or(true)) {
+        ui.ctx()
+            .request_repaint_after(std::time::Duration::from_millis(120));
+    }
 }
 
 /// Fondo del panel central: rejilla tenue, líneas de barrido y esquinas de "visor".

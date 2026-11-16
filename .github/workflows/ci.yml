@@ -1,0 +1,16 @@
+# Tests en cada cambio (no solo al publicar). Windows es la plataforma principal
+# y no necesita librerías del sistema.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --release
