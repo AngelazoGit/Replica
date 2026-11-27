@@ -2951,7 +2951,7 @@ checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 
 [[package]]
 name = "replica"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2964,6 +2964,7 @@ dependencies = [
  "serde_json",
  "sys-locale",
  "tray-icon",
+ "windows-sys 0.61.2",
  "xcap",
 ]
 

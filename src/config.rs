@@ -19,6 +19,10 @@ pub struct Config {
     pub trusted: Vec<u64>,
     /// Windows: cerrar la ventana sale del todo en vez de quedarse en la bandeja.
     pub no_tray: bool,
+    /// No minimizar Replica al grabar.
+    pub no_minimize: bool,
+    /// No avisar (sonido y parpadeo) al terminar o fallar una ruta.
+    pub no_notify: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

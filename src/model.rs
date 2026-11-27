@@ -58,6 +58,14 @@ pub enum Action {
     Wait {
         ms: u64,
     },
+    /// Clic donde esté el ratón, sin moverlo (autoclicker).
+    ClickHere {
+        button: Button,
+    },
+    /// Ejecuta otra ruta guardada (una vuelta) y sigue con esta.
+    RunRoute {
+        name: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -119,7 +127,24 @@ pub struct Settings {
     pub countdown_s: u32,
     /// Atajo global que lanza esta ruta directamente (F1–F8).
     pub hotkey: Option<Key>,
+    /// Si un paso falla (ancla, ventana…), repetir la vuelta desde el principio hasta N veces.
+    pub retries: u32,
+    /// Al grabar, las esperas de más de N s se recortan a N s (0 = no recortar).
+    pub trim_wait_s: u32,
+    /// Parar las vueltas cuando aparezca (o desaparezca) la imagen `until.png` de la ruta.
+    pub until: Option<Until>,
 }
+
+/// Condición de parada: la imagen `until.png` (capturada en `x, y`) aparece o desaparece.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Until {
+    pub x: f64,
+    pub y: f64,
+    pub appear: bool,
+}
+
+/// Archivo de la imagen de la condición de parada, dentro de la carpeta de la ruta.
+pub const UNTIL_FILE: &str = "until.png";
 
 impl Default for Settings {
     fn default() -> Self {
@@ -136,6 +161,9 @@ impl Default for Settings {
             record_moves: true,
             countdown_s: 3,
             hotkey: None,
+            retries: 0,
+            trim_wait_s: 0,
+            until: None,
         }
     }
 }
@@ -231,6 +259,53 @@ pub fn sanitize(name: &str) -> String {
     if s.is_empty() { "ruta".into() } else { s }
 }
 
+/// Recetas rápidas: rutas que no hace falta grabar. Se repiten hasta F12.
+pub enum Receta {
+    /// Clic donde esté el ratón cada `ms`.
+    Autoclic { ms: u64, button: Button },
+    /// Pulsa una tecla cada `min` minutos para no quedar inactivo.
+    AntiAfk { min: u32, key: Key },
+    /// Pulsa una tecla cada `ms`.
+    Tecla { ms: u64, key: Key },
+}
+
+impl Receta {
+    pub fn ruta(&self) -> (Route, Settings) {
+        let paso = |delay_ms, action| Step { delay_ms, action };
+        let toque = |key| {
+            vec![
+                paso(0, Action::KeyDown { key }),
+                paso(60, Action::KeyUp { key }),
+            ]
+        };
+        let (name, steps, pausa, humanize) = match *self {
+            Receta::Autoclic { ms, button } => (
+                tr("Autoclicker"),
+                vec![paso(0, Action::ClickHere { button })],
+                ms,
+                false,
+            ),
+            Receta::AntiAfk { min, key } => (tr("Anti-AFK"), toque(key), min as u64 * 60_000, true),
+            Receta::Tecla { ms, key } => (tr("Repetir tecla"), toque(key), ms, false),
+        };
+        let cfg = Settings {
+            loops: 0,
+            pause_between_loops_ms: pausa,
+            humanize,
+            use_anchors: false,
+            ..Settings::default()
+        };
+        (
+            Route {
+                name: name.into(),
+                steps,
+                ..Default::default()
+            },
+            cfg,
+        )
+    }
+}
+
 /// Nombre del botón del ratón en el idioma actual.
 fn boton(b: &Button) -> String {
     match b {
@@ -268,6 +343,8 @@ impl Action {
             Action::KeyUp { key } => trf("Soltar tecla {}", &[&format!("{key:?}")]),
             Action::TypeText { text } => trf("Escribir «{}»", &[text]),
             Action::RunCommand { command } => trf("Ejecutar `{}`", &[command]),
+            Action::ClickHere { button } => trf("Clic {} donde esté el ratón", &[&boton(button)]),
+            Action::RunRoute { name } => trf("Ejecutar la ruta «{}»", &[name]),
             Action::Wait { ms } => trf("Esperar {} ms", &[ms]),
         }
     }
@@ -290,6 +367,31 @@ mod tests {
             n += 1;
         }
         assert_eq!(n, 3);
+    }
+
+    #[test]
+    fn recipes_loop_forever_without_anchors() {
+        let (r, cfg) = Receta::AntiAfk {
+            min: 5,
+            key: Key::Space,
+        }
+        .ruta();
+        assert_eq!(cfg.loops, 0, "hasta F12");
+        assert_eq!(cfg.pause_between_loops_ms, 300_000);
+        assert!(!cfg.use_anchors);
+        assert_eq!(r.steps.len(), 2, "pulsar y soltar");
+        let (r, cfg) = Receta::Autoclic {
+            ms: 100,
+            button: Button::Left,
+        }
+        .ruta();
+        assert_eq!(
+            r.steps[0].action,
+            Action::ClickHere {
+                button: Button::Left
+            }
+        );
+        assert_eq!(cfg.pause_between_loops_ms, 100);
     }
 
     #[test]

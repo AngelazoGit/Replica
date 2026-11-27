@@ -73,6 +73,8 @@ jobs:
             - Anclas visuales: busca en pantalla lo que había bajo cada clic antes de clicar.
             - Rutas independientes de la resolución: se adaptan a la posición y tamaño de la ventana.
             - Ajustes por ruta, deshacer, paso a paso, cuenta atrás y programador (a una hora o cada X minutos).
+            - Recetas sin grabar (autoclicker, anti-AFK, repetir tecla), reintentos, «repetir hasta que…» y rutas encadenadas.
+            - Grabar sin pensar (nombre automático, se minimiza, recorta esperas) y aviso al terminar o fallar.
             - Texto Unicode, bandeja del sistema, 6 máscaras visuales y 10 idiomas.
 
             Linux y macOS: compilar desde el código (ver README).

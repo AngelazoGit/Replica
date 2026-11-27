@@ -4,12 +4,15 @@
 use crate::bot::{Bot, Mode, ROUTE_HOTKEYS, simplify_moves};
 use crate::config::{Schedule, When};
 use crate::i18n::{self, tr, trf};
-use crate::model::{Action, MissingAnchor, Route, Settings, Step, Target};
+use crate::model::{
+    Action, MissingAnchor, Receta, Route, Settings, Step, Target, UNTIL_FILE, Until,
+};
 use crate::theme::{self, card, chip, mono, pal, prop, titulo};
 use eframe::egui::{
     self, Align, Align2, Color32, CornerRadius, Layout, Margin, Pos2, Rect, RichText, Sense,
     Stroke, Ui, Vec2,
 };
+use rdev::{Button, Key};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -113,7 +116,32 @@ pub struct App {
     f_hour: u32,
     f_min: u32,
     f_every: u32,
+    /// Ruta elegida para el paso «Ejecutar ruta».
+    f_sub: String,
+    // Recetas rápidas.
+    r_ms: u64,
+    r_btn: Button,
+    r_min: u32,
+    r_key: Key,
+    r_key_rep: Key,
+    r_key_ms: u64,
+    /// Aviso flotante al terminar una reproducción: (bien, texto, hasta cuándo).
+    toast: Option<(bool, String, f64)>,
 }
+
+/// Teclas ofrecidas en las recetas.
+const TECLAS_RECETA: [Key; 10] = [
+    Key::Space,
+    Key::KeyE,
+    Key::KeyF,
+    Key::KeyR,
+    Key::KeyQ,
+    Key::Num1,
+    Key::Num2,
+    Key::Num3,
+    Key::Return,
+    Key::Tab,
+];
 
 impl App {
     pub fn new(cc: &eframe::CreationContext, bot: Arc<Bot>, quit: Arc<AtomicBool>) -> Self {
@@ -144,6 +172,14 @@ impl App {
             f_hour: 9,
             f_min: 0,
             f_every: 30,
+            f_sub: String::new(),
+            r_ms: 100,
+            r_btn: Button::Left,
+            r_min: 5,
+            r_key: Key::Space,
+            r_key_rep: Key::KeyE,
+            r_key_ms: 500,
+            toast: None,
         }
     }
 
@@ -306,6 +342,17 @@ impl eframe::App for App {
             self.last_mode = mode;
         }
         self.was_saving = saving;
+        let aviso = bot.state.lock().unwrap().aviso.take();
+        if let Some((ok, msg)) = aviso {
+            if !bot.state.lock().unwrap().config.no_notify {
+                ctx.send_viewport_cmd(egui::ViewportCommand::RequestUserAttention(
+                    egui::UserAttentionType::Informational,
+                ));
+                pitido(ok);
+                let hasta = ctx.input(|i| i.time) + 8.0;
+                self.toast = Some((ok, msg, hasta));
+            }
+        }
         let dirty = mode == Mode::Idle && !saving && self.dirty();
         bot.state.lock().unwrap().unsaved = dirty;
 
@@ -382,6 +429,7 @@ impl eframe::App for App {
             });
 
         self.dialogo(&ctx);
+        self.toast_ui(&ctx);
         if mode != Mode::Idle || saving {
             ctx.request_repaint_after(std::time::Duration::from_millis(50)); // pulso de la insignia
         }
@@ -618,6 +666,144 @@ impl App {
         });
     }
 
+    /// Aviso flotante abajo a la derecha al terminar o fallar una ruta.
+    fn toast_ui(&mut self, ctx: &egui::Context) {
+        let Some((ok, msg, hasta)) = self.toast.clone() else {
+            return;
+        };
+        if ctx.input(|i| i.time) > hasta {
+            self.toast = None;
+            return;
+        }
+        let c = pal();
+        let col = if ok { c.verde } else { c.rojo };
+        egui::Area::new(egui::Id::unique("toast"))
+            .anchor(Align2::RIGHT_BOTTOM, Vec2::new(-20.0, -44.0))
+            .show(ctx, |ui| {
+                card().stroke(Stroke::new(1.5_f32, col)).show(ui, |ui| {
+                    ui.set_max_width(360.0);
+                    ui.label(RichText::new(msg).font(titulo(13.5)).color(col));
+                });
+            });
+        ctx.request_repaint_after(std::time::Duration::from_millis(500));
+    }
+
+    /// Recetas rápidas: tres cosas típicas que no hace falta grabar.
+    fn recetas_ui(&mut self, ui: &mut Ui, mode: Mode) {
+        let c = pal();
+        let libre = mode == Mode::Idle;
+        let mut lanzar: Option<Receta> = None;
+        let tecla = |ui: &mut Ui, id: &str, k: &mut Key| {
+            egui::ComboBox::from_id_salt(id.to_string())
+                .selected_text(format!("{k:?}"))
+                .width(80.0)
+                .show_ui(ui, |ui| {
+                    for t in TECLAS_RECETA {
+                        ui.selectable_value(k, t, format!("{t:?}"));
+                    }
+                });
+        };
+        theme::tarjeta(ui, tr("Recetas rápidas (sin grabar nada)"), |ui| {
+            theme::ayuda(
+                ui,
+                tr("Se repiten hasta que pulses F12. Empiezan tras la cuenta atrás de 3 s."),
+            );
+            ui.add_space(6.0);
+            egui::Grid::new("recetas")
+                .num_columns(3)
+                .spacing([14.0, 8.0])
+                .show(ui, |ui| {
+                    ui.label(
+                        RichText::new(tr("Autoclicker"))
+                            .font(titulo(13.5))
+                            .color(c.texto),
+                    );
+                    ui.horizontal(|ui| {
+                        theme::pildoras(
+                            ui,
+                            &mut self.r_btn,
+                            &[
+                                (Button::Left, tr("izquierdo")),
+                                (Button::Right, tr("derecho")),
+                            ],
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut self.r_ms)
+                                .range(20..=60_000)
+                                .prefix(format!("{} ", tr("cada")))
+                                .suffix(" ms")
+                                .speed(10),
+                        );
+                    });
+                    if ui
+                        .add_enabled(libre, theme::boton_mini(&format!("▶ {}", tr("Empezar"))))
+                        .clicked()
+                    {
+                        lanzar = Some(Receta::Autoclic {
+                            ms: self.r_ms,
+                            button: self.r_btn,
+                        });
+                    }
+                    ui.end_row();
+
+                    ui.label(
+                        RichText::new(tr("Anti-AFK"))
+                            .font(titulo(13.5))
+                            .color(c.texto),
+                    );
+                    ui.horizontal(|ui| {
+                        tecla(ui, "r_afk", &mut self.r_key);
+                        ui.add(
+                            egui::DragValue::new(&mut self.r_min)
+                                .range(1..=60)
+                                .prefix(format!("{} ", tr("cada")))
+                                .suffix(" min"),
+                        );
+                    });
+                    if ui
+                        .add_enabled(libre, theme::boton_mini(&format!("▶ {}", tr("Empezar"))))
+                        .clicked()
+                    {
+                        lanzar = Some(Receta::AntiAfk {
+                            min: self.r_min,
+                            key: self.r_key,
+                        });
+                    }
+                    ui.end_row();
+
+                    ui.label(
+                        RichText::new(tr("Repetir tecla"))
+                            .font(titulo(13.5))
+                            .color(c.texto),
+                    );
+                    ui.horizontal(|ui| {
+                        tecla(ui, "r_tecla", &mut self.r_key_rep);
+                        ui.add(
+                            egui::DragValue::new(&mut self.r_key_ms)
+                                .range(20..=60_000)
+                                .prefix(format!("{} ", tr("cada")))
+                                .suffix(" ms")
+                                .speed(10),
+                        );
+                    });
+                    if ui
+                        .add_enabled(libre, theme::boton_mini(&format!("▶ {}", tr("Empezar"))))
+                        .clicked()
+                    {
+                        lanzar = Some(Receta::Tecla {
+                            ms: self.r_key_ms,
+                            key: self.r_key_rep,
+                        });
+                    }
+                    ui.end_row();
+                });
+        });
+        if let Some(r) = lanzar {
+            let (route, cfg) = r.ruta();
+            self.bot.play_receta(route, cfg);
+        }
+    }
+
     fn dialogo(&mut self, ctx: &egui::Context) {
         let Some(p) = &self.pendiente else { return };
         let c = pal();
@@ -724,6 +910,8 @@ impl App {
                 theme::stat_card(&mut cols[3], tr("Atajos"), &atajos.to_string(), tr("de F1 a F8"), c.suave);
             });
             ui.add_space(18.0);
+            self.recetas_ui(ui, mode);
+            ui.add_space(18.0);
             ui.label(RichText::new(tr("¿Qué quieres hacer?")).font(titulo(14.0)).color(c.texto));
             ui.add_space(6.0);
             ui.columns(3, |cols| {
@@ -795,6 +983,7 @@ impl App {
         );
         ui.add(
             egui::TextEdit::singleline(&mut self.bot.state.lock().unwrap().record_name)
+                .hint_text(tr("automático (fecha y hora)"))
                 .desired_width(f32::INFINITY),
         );
         ui.add_space(8.0);
@@ -878,6 +1067,7 @@ impl App {
         );
         ui.add_space(6.0);
         let bot = self.bot.clone();
+        let mut capturar: Option<bool> = None; // se lanza al soltar el estado (bloquea su mutex)
         egui::ScrollArea::vertical().id_salt("ajustes").auto_shrink([false, false]).show(ui, |ui| {
             let mut st = bot.state.lock().unwrap();
             let route_name = st.route.name.clone();
@@ -914,7 +1104,48 @@ impl App {
             ui.add(egui::DragValue::new(&mut s.anchor_timeout_ms).prefix(format!("{} ", tr("esperar ancla"))).suffix(" ms").speed(10));
             ui.label(RichText::new(tr("Si no se puede verificar un clic:")).font(prop(12.0)).color(c.suave));
             theme::pildoras(ui, &mut s.on_missing, &[(MissingAnchor::ClickAnyway, tr("clicar igual")), (MissingAnchor::Stop, tr("detener"))]);
+            ui.add_space(10.0);
+
+            ui.label(RichText::new(tr("SI FALLA")).font(mono(10.0)).color(c.suave));
+            ui.add(egui::DragValue::new(&mut s.retries).range(0..=20).prefix(format!("{} ", tr("reintentos"))));
+            theme::ayuda(ui, tr("Si un paso falla, la vuelta empieza otra vez desde el principio en lugar de parar."));
+            ui.add_space(10.0);
+
+            ui.label(RichText::new(tr("PARAR CUANDO")).font(mono(10.0)).color(c.suave));
+            let mut modo = s.until.as_ref().map(|u| u.appear);
+            if theme::pildoras(ui, &mut modo, &[(None, tr("nunca")), (Some(true), tr("aparezca")), (Some(false), tr("desaparezca"))]) {
+                match modo {
+                    None => s.until = None,
+                    Some(a) => match &mut s.until {
+                        Some(u) => u.appear = a,
+                        None => capturar = Some(a),
+                    },
+                }
+            }
+            if let Some(u) = &s.until {
+                let u: Until = u.clone();
+                ui.horizontal(|ui| {
+                    let path = Route::dir(&route_name).join(UNTIL_FILE);
+                    if let Some(tex) = self.anchor_texture(ui.ctx(), path) {
+                        ui.image((tex.id(), Vec2::splat(36.0)));
+                    }
+                    if ui.add(theme::boton_mini(tr("Capturar otra vez (3 s)"))).clicked() {
+                        capturar = Some(u.appear);
+                    }
+                });
+            }
+            theme::ayuda(ui, tr("Las vueltas se repiten hasta que esa imagen aparezca o desaparezca (por ejemplo, «inventario lleno»)."));
+            ui.add_space(10.0);
+
+            ui.label(RichText::new(tr("AL GRABAR")).font(mono(10.0)).color(c.suave));
+            ui.add(egui::DragValue::new(&mut s.trim_wait_s).range(0..=600).prefix(format!("{} ", tr("recortar esperas de más de"))).suffix(" s"));
+            theme::ayuda(ui, tr("0 = no recortar. Útil si te despistas mientras grabas."));
         });
+        if let Some(appear) = capturar {
+            let name = bot.state.lock().unwrap().route.name.clone();
+            self.textures.remove(&Route::dir(&name).join(UNTIL_FILE));
+            bot.capturar_until(appear);
+        }
     }
 
     fn panel_editor(&mut self, ui: &mut Ui, ctx: &egui::Context, editable: bool, dirty: bool) {
@@ -1079,6 +1310,35 @@ impl App {
                 if ui.add(theme::boton_mini(tr("+ Esperar"))).clicked() {
                     let ms = self.new_wait;
                     self.edit(|r| push(r, Action::Wait { ms }));
+                }
+                let otras: Vec<String> = self
+                    .routes
+                    .iter()
+                    .filter(|r| **r != name)
+                    .cloned()
+                    .collect();
+                if !otras.is_empty() {
+                    if !otras.contains(&self.f_sub) {
+                        self.f_sub = otras[0].clone();
+                    }
+                    egui::ComboBox::from_id_salt("f_sub")
+                        .selected_text(self.f_sub.clone())
+                        .width(140.0)
+                        .show_ui(ui, |ui| {
+                            for r in &otras {
+                                ui.selectable_value(&mut self.f_sub, r.clone(), r);
+                            }
+                        });
+                    if ui
+                        .add(theme::boton_mini(tr("+ Ejecutar ruta")))
+                        .on_hover_text(tr(
+                            "Encadena otra ruta: se ejecuta una vuelta suya y luego sigue esta.",
+                        ))
+                        .clicked()
+                    {
+                        let sub = self.f_sub.clone();
+                        self.edit(|r| push(r, Action::RunRoute { name: sub }));
+                    }
                 }
             });
         });
@@ -1462,6 +1722,27 @@ impl App {
             }
         });
         ui.add_space(10.0);
+        theme::tarjeta(ui, tr("Comodidad"), |ui| {
+            let mut st = bot.state.lock().unwrap();
+            let mut minimizar = !st.config.no_minimize;
+            let mut avisar = !st.config.no_notify;
+            let a = ui
+                .checkbox(&mut minimizar, tr("Minimizar Replica mientras grabas"))
+                .changed();
+            let b = ui
+                .checkbox(
+                    &mut avisar,
+                    tr("Avisar al terminar o fallar una ruta (sonido y parpadeo)"),
+                )
+                .changed();
+            st.config.no_minimize = !minimizar;
+            st.config.no_notify = !avisar;
+            drop(st);
+            if a || b {
+                bot.save_config();
+            }
+        });
+        ui.add_space(10.0);
         theme::tarjeta(ui, tr("Bandeja del sistema"), |ui| {
             if cfg!(windows) {
                 let mut tray = !bot.state.lock().unwrap().config.no_tray;
@@ -1515,7 +1796,24 @@ fn tag(a: &Action) -> (&'static str, Color32) {
         Action::TypeText { .. } => (tr("TEXTO"), c.verde),
         Action::RunCommand { .. } => (tr("EXEC"), c.rojo),
         Action::Wait { .. } => (tr("ESPERA"), c.suave),
+        Action::ClickHere { .. } => (tr("CLIC"), c.acento),
+        Action::RunRoute { .. } => (tr("RUTA"), c.verde),
     }
+}
+
+/// Pitido de aviso (Windows). En el resto de sistemas basta el parpadeo de la ventana.
+fn pitido(ok: bool) {
+    #[cfg(windows)]
+    unsafe {
+        use windows_sys::Win32::UI::WindowsAndMessaging::{MB_ICONASTERISK, MB_ICONHAND};
+        windows_sys::Win32::System::Diagnostics::Debug::MessageBeep(if ok {
+            MB_ICONASTERISK
+        } else {
+            MB_ICONHAND
+        });
+    }
+    #[cfg(not(windows))]
+    let _ = ok;
 }
 
 fn push(r: &mut Route, action: Action) {

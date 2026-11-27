@@ -2424,16 +2424,6 @@ ja ⚠ このルートはお使いのコンピューターでプログラムを�
 ko ⚠ 이 경로는 컴퓨터에서 프로그램을 실행합니다:
 it ⚠ Questo percorso esegue programmi sul tuo computer:
 
-= ✔ Ruta completada.
-en ✔ Route completed.
-zh ✔ 路线已完成。
-fr ✔ Route terminée.
-pt ✔ Rota concluída.
-ru ✔ Маршрут выполнен.
-de ✔ Route abgeschlossen.
-ja ✔ ルートが完了しました。
-ko ✔ 경로를 완료했습니다.
-it ✔ Percorso completato.
 
 = Paso {} ejecutado: {}
 en Step {} done: {}
@@ -2456,3 +2446,432 @@ de Speichere oder verwirf die Änderungen der geöffneten Route vor der Aufnahme
 ja 記録する前に、開いているルートの変更を保存するか破棄してください。
 ko 녹화하기 전에 열린 경로의 변경 사항을 저장하거나 버리세요.
 it Salva o scarta le modifiche del percorso aperto prima di registrare.
+
+= '{}' ejecuta programas sin permitir.
+en '{}' runs programs that aren't allowed.
+zh “{}”会运行未允许的程序。
+fr '{}' lance des programmes non autorisés.
+pt '{}' executa programas não permitidos.
+ru «{}» запускает неразрешённые программы.
+de '{}' startet nicht erlaubte Programme.
+ja 「{}」は許可されていないプログラムを実行します。
+ko '{}'은(는) 허용되지 않은 프로그램을 실행합니다.
+it '{}' esegue programmi non consentiti.
+
+= + Ejecutar ruta
+en + Run route
+zh + 运行路线
+fr + Lancer une route
+pt + Executar rota
+ru + Запустить маршрут
+de + Route ausführen
+ja + ルートを実行
+ko + 경로 실행
+it + Esegui percorso
+
+= 0 = no recortar. Útil si te despistas mientras grabas.
+en 0 = don't trim. Handy if you get distracted while recording.
+zh 0 = 不裁剪。录制时走神了很有用。
+fr 0 = ne pas raccourcir. Pratique si vous vous laissez distraire pendant l'enregistrement.
+pt 0 = não cortar. Útil se você se distrair enquanto grava.
+ru 0 = не сокращать. Полезно, если вы отвлеклись во время записи.
+de 0 = nicht kürzen. Praktisch, wenn du beim Aufnehmen abgelenkt wirst.
+ja 0 = 短縮しない。記録中に気が散ったときに便利です。
+ko 0 = 줄이지 않음. 녹화 중에 딴짓을 했을 때 유용합니다.
+it 0 = non accorciare. Utile se ti distrai mentre registri.
+
+= AL GRABAR
+en WHEN RECORDING
+zh 录制时
+fr PENDANT L'ENREGISTREMENT
+pt AO GRAVAR
+ru ПРИ ЗАПИСИ
+de BEIM AUFNEHMEN
+ja 記録時
+ko 녹화할 때
+it DURANTE LA REGISTRAZIONE
+
+= Anti-AFK
+en Anti-AFK
+zh 防挂机
+fr Anti-AFK
+pt Anti-AFK
+ru Анти-AFK
+de Anti-AFK
+ja 放置対策
+ko 잠수 방지
+it Anti-AFK
+
+= Autoclicker
+en Autoclicker
+zh 自动点击
+fr Autoclicker
+pt Autoclicker
+ru Автокликер
+de Autoklicker
+ja オートクリッカー
+ko 자동 클릭
+it Autoclicker
+
+= Avisar al terminar o fallar una ruta (sonido y parpadeo)
+en Notify when a route finishes or fails (sound and flashing)
+zh 路线完成或失败时提醒（声音和闪烁）
+fr Prévenir quand une route se termine ou échoue (son et clignotement)
+pt Avisar quando uma rota terminar ou falhar (som e piscar)
+ru Сообщать о завершении или сбое маршрута (звук и мигание)
+de Benachrichtigen, wenn eine Route endet oder fehlschlägt (Ton und Blinken)
+ja ルートの終了・失敗を知らせる（音と点滅）
+ko 경로가 끝나거나 실패하면 알림 (소리와 깜빡임)
+it Avvisa quando un percorso termina o fallisce (suono e lampeggio)
+
+= Capturar otra vez (3 s)
+en Capture again (3 s)
+zh 重新截取（3 秒）
+fr Capturer à nouveau (3 s)
+pt Capturar de novo (3 s)
+ru Захватить снова (3 с)
+de Erneut aufnehmen (3 s)
+ja もう一度キャプチャ（3 秒）
+ko 다시 캡처 (3초)
+it Cattura di nuovo (3 s)
+
+= Clic {} donde esté el ratón
+en {} click wherever the mouse is
+zh 在鼠标当前位置点击{}键
+fr Clic {} là où se trouve la souris
+pt Clique {} onde estiver o mouse
+ru Клик ({}) там, где мышь
+de {}klick an der Mausposition
+ja マウスの位置で{}クリック
+ko 마우스가 있는 곳에서 {} 클릭
+it Clic {} dove si trova il mouse
+
+= Comodidad
+en Convenience
+zh 便捷
+fr Confort
+pt Comodidade
+ru Удобство
+de Komfort
+ja 便利機能
+ko 편의 기능
+it Comodità
+
+= Demasiadas rutas encadenadas en '{}'.
+en Too many chained routes in '{}'.
+zh “{}”中嵌套的路线太多。
+fr Trop de routes enchaînées dans '{}'.
+pt Rotas encadeadas demais em '{}'.
+ru Слишком много вложенных маршрутов в «{}».
+de Zu viele verkettete Routen in '{}'.
+ja 「{}」で連結されたルートが多すぎます。
+ko '{}'에 연결된 경로가 너무 많습니다.
+it Troppi percorsi concatenati in '{}'.
+
+= Ejecutar la ruta «{}»
+en Run route “{}”
+zh 运行路线“{}”
+fr Lancer la route « {} »
+pt Executar a rota “{}”
+ru Запустить маршрут «{}»
+de Route „{}“ ausführen
+ja ルート「{}」を実行
+ko 경로 “{}” 실행
+it Esegui il percorso «{}»
+
+= Empezar
+en Start
+zh 开始
+fr Démarrer
+pt Começar
+ru Начать
+de Starten
+ja 開始
+ko 시작
+it Avvia
+
+= Encadena otra ruta: se ejecuta una vuelta suya y luego sigue esta.
+en Chains another route: one loop of it runs, then this one continues.
+zh 串联另一条路线：先运行它一轮，再继续当前路线。
+fr Enchaîne une autre route : elle fait un tour, puis celle-ci continue.
+pt Encadeia outra rota: ela roda uma volta e depois esta continua.
+ru Встраивает другой маршрут: он выполняется один круг, затем продолжается этот.
+de Verkettet eine andere Route: Sie läuft eine Runde, dann geht es hier weiter.
+ja 別のルートを連結します。そのルートを1回実行してから、このルートを続けます。
+ko 다른 경로를 연결합니다: 그 경로를 한 번 실행한 뒤 이 경로를 계속합니다.
+it Concatena un altro percorso: ne esegue un giro, poi prosegue questo.
+
+= Guarda la ruta antes de capturar la imagen de parada.
+en Save the route before capturing the stop image.
+zh 截取停止图像前请先保存路线。
+fr Enregistrez la route avant de capturer l'image d'arrêt.
+pt Salve a rota antes de capturar a imagem de parada.
+ru Сохраните маршрут, прежде чем захватывать изображение остановки.
+de Speichere die Route, bevor du das Stoppbild aufnimmst.
+ja 停止画像をキャプチャする前にルートを保存してください。
+ko 정지 이미지를 캡처하기 전에 경로를 저장하세요.
+it Salva il percorso prima di catturare l'immagine di arresto.
+
+= Imagen de parada capturada (pulsa Guardar).
+en Stop image captured (press Save).
+zh 已截取停止图像（请点击保存）。
+fr Image d'arrêt capturée (appuyez sur Enregistrer).
+pt Imagem de parada capturada (pressione Salvar).
+ru Изображение остановки захвачено (нажмите «Сохранить»).
+de Stoppbild aufgenommen (drücke Speichern).
+ja 停止画像をキャプチャしました（保存を押してください）。
+ko 정지 이미지를 캡처했습니다 (저장을 누르세요).
+it Immagine di arresto catturata (premi Salva).
+
+= Las vueltas se repiten hasta que esa imagen aparezca o desaparezca (por ejemplo, «inventario lleno»).
+en Loops repeat until that image appears or disappears (for example, “inventory full”).
+zh 循环会一直重复，直到该图像出现或消失（例如“背包已满”）。
+fr Les tours se répètent jusqu'à ce que cette image apparaisse ou disparaisse (par exemple « inventaire plein »).
+pt As voltas se repetem até essa imagem aparecer ou desaparecer (por exemplo, “inventário cheio”).
+ru Круги повторяются, пока это изображение не появится или не исчезнет (например, «инвентарь полон»).
+de Die Runden wiederholen sich, bis dieses Bild erscheint oder verschwindet (zum Beispiel „Inventar voll“).
+ja その画像が現れる（または消える）までループを繰り返します（例:「インベントリが満杯」）。
+ko 그 이미지가 나타나거나 사라질 때까지 반복합니다 (예: “인벤토리 가득 참”).
+it I giri si ripetono finché quell'immagine non appare o scompare (per esempio «inventario pieno»).
+
+= Minimizar Replica mientras grabas
+en Minimize Replica while recording
+zh 录制时最小化 Replica
+fr Réduire Replica pendant l'enregistrement
+pt Minimizar o Replica enquanto grava
+ru Сворачивать Replica во время записи
+de Replica beim Aufnehmen minimieren
+ja 記録中は Replica を最小化
+ko 녹화하는 동안 Replica 최소화
+it Riduci a icona Replica durante la registrazione
+
+= No se pudo cargar '{}': {}
+en Couldn't load '{}': {}
+zh 无法加载“{}”：{}
+fr Impossible de charger '{}' : {}
+pt Não foi possível carregar '{}': {}
+ru Не удалось загрузить «{}»: {}
+de '{}' konnte nicht geladen werden: {}
+ja 「{}」を読み込めませんでした: {}
+ko '{}'을(를) 불러올 수 없습니다: {}
+it Impossibile caricare '{}': {}
+
+= PARAR CUANDO
+en STOP WHEN
+zh 停止条件
+fr ARRÊTER QUAND
+pt PARAR QUANDO
+ru ОСТАНОВИТЬ, КОГДА
+de STOPPEN, WENN
+ja 停止条件
+ko 정지 조건
+it FERMA QUANDO
+
+= Pon el ratón sobre lo que hay que vigilar: se captura en 3 s.
+en Put the mouse over what should be watched: capturing in 3 s.
+zh 把鼠标放在需要监视的位置：3 秒后截取。
+fr Placez la souris sur ce qu'il faut surveiller : capture dans 3 s.
+pt Coloque o mouse sobre o que deve ser vigiado: captura em 3 s.
+ru Наведите мышь на то, за чем нужно следить: захват через 3 с.
+de Halte die Maus über das, was beobachtet werden soll: Aufnahme in 3 s.
+ja 監視したいものの上にマウスを置いてください: 3 秒後にキャプチャします。
+ko 감시할 대상 위에 마우스를 올려 두세요: 3초 후 캡처합니다.
+it Metti il mouse su ciò che va controllato: cattura tra 3 s.
+
+= RUTA
+en ROUTE
+zh 路线
+fr ROUTE
+pt ROTA
+ru МАРШРУТ
+de ROUTE
+ja ルート
+ko 경로
+it PERCORSO
+
+= Recetas rápidas (sin grabar nada)
+en Quick recipes (no recording needed)
+zh 快捷方案（无需录制）
+fr Recettes rapides (sans rien enregistrer)
+pt Receitas rápidas (sem gravar nada)
+ru Быстрые рецепты (без записи)
+de Schnellrezepte (ohne Aufnahme)
+ja クイックレシピ（記録不要）
+ko 빠른 레시피 (녹화 불필요)
+it Ricette rapide (senza registrare nulla)
+
+= Reintento {} de {}: {}
+en Retry {} of {}: {}
+zh 第 {} 次重试（共 {} 次）：{}
+fr Nouvel essai {} sur {} : {}
+pt Nova tentativa {} de {}: {}
+ru Повтор {} из {}: {}
+de Wiederholung {} von {}: {}
+ja 再試行 {} / {}: {}
+ko 재시도 {}/{}: {}
+it Tentativo {} di {}: {}
+
+= Repetir tecla
+en Repeat key
+zh 重复按键
+fr Répéter une touche
+pt Repetir tecla
+ru Повтор клавиши
+de Taste wiederholen
+ja キーを連打
+ko 키 반복
+it Ripeti tasto
+
+= SI FALLA
+en IF IT FAILS
+zh 失败时
+fr EN CAS D'ÉCHEC
+pt SE FALHAR
+ru ПРИ СБОЕ
+de BEI FEHLER
+ja 失敗したとき
+ko 실패하면
+it SE FALLISCE
+
+= Se repiten hasta que pulses F12. Empiezan tras la cuenta atrás de 3 s.
+en They repeat until you press F12. They start after a 3 s countdown.
+zh 会一直重复，直到按下 F12。3 秒倒计时后开始。
+fr Elles se répètent jusqu'à ce que vous appuyiez sur F12. Elles démarrent après un compte à rebours de 3 s.
+pt Elas se repetem até você pressionar F12. Começam após a contagem regressiva de 3 s.
+ru Повторяются, пока вы не нажмёте F12. Начинаются после отсчёта 3 с.
+de Sie wiederholen sich, bis du F12 drückst. Sie starten nach einem Countdown von 3 s.
+ja F12 を押すまで繰り返します。3 秒のカウントダウン後に開始します。
+ko F12를 누를 때까지 반복합니다. 3초 카운트다운 후 시작합니다.
+it Si ripetono finché non premi F12. Partono dopo un conto alla rovescia di 3 s.
+
+= Si un paso falla, la vuelta empieza otra vez desde el principio en lugar de parar.
+en If a step fails, the loop starts again from the beginning instead of stopping.
+zh 如果某一步失败，本轮会从头重新开始，而不是停止。
+fr Si une étape échoue, le tour recommence depuis le début au lieu de s'arrêter.
+pt Se um passo falhar, a volta recomeça do início em vez de parar.
+ru Если шаг не удался, круг начинается заново, а не останавливается.
+de Wenn ein Schritt fehlschlägt, beginnt die Runde von vorn, statt anzuhalten.
+ja ステップが失敗したら、停止せずにループを最初からやり直します。
+ko 단계가 실패하면 멈추지 않고 그 반복을 처음부터 다시 시작합니다.
+it Se un passo fallisce, il giro ricomincia dall'inizio invece di fermarsi.
+
+= aparezca
+en appears
+zh 出现时
+fr apparaît
+pt aparecer
+ru появится
+de erscheint
+ja 現れたら
+ko 나타나면
+it appare
+
+= automático (fecha y hora)
+en automatic (date and time)
+zh 自动（日期和时间）
+fr automatique (date et heure)
+pt automático (data e hora)
+ru автоматически (дата и время)
+de automatisch (Datum und Uhrzeit)
+ja 自動（日付と時刻）
+ko 자동 (날짜와 시간)
+it automatico (data e ora)
+
+= desaparezca
+en disappears
+zh 消失时
+fr disparaît
+pt desaparecer
+ru исчезнет
+de verschwindet
+ja 消えたら
+ko 사라지면
+it scompare
+
+= nunca
+en never
+zh 从不
+fr jamais
+pt nunca
+ru никогда
+de nie
+ja しない
+ko 안 함
+it mai
+
+= recortar esperas de más de
+en trim waits longer than
+zh 裁剪超过此时长的等待
+fr raccourcir les attentes de plus de
+pt cortar esperas de mais de
+ru сокращать паузы длиннее
+de Wartezeiten kürzen über
+ja 次より長い待機を短縮
+ko 다음보다 긴 대기 줄이기
+it accorcia attese oltre
+
+= reintentos
+en retries
+zh 重试次数
+fr nouvelles tentatives
+pt tentativas
+ru повторов
+de Wiederholungen
+ja 再試行回数
+ko 재시도 횟수
+it tentativi
+
+= × Detenido por el usuario.
+en × Stopped by the user.
+zh × 已被用户停止。
+fr × Arrêté par l'utilisateur.
+pt × Interrompido pelo usuário.
+ru × Остановлено пользователем.
+de × Vom Benutzer angehalten.
+ja × ユーザーが停止しました。
+ko × 사용자가 중지했습니다.
+it × Interrotto dall'utente.
+
+= × No se pudo capturar: {}
+en × Couldn't capture: {}
+zh × 无法截取：{}
+fr × Capture impossible : {}
+pt × Não foi possível capturar: {}
+ru × Не удалось захватить: {}
+de × Aufnahme fehlgeschlagen: {}
+ja × キャプチャできませんでした: {}
+ko × 캡처할 수 없습니다: {}
+it × Impossibile catturare: {}
+
+= × No se pudo leer la posición del ratón.
+en × Couldn't read the mouse position.
+zh × 无法读取鼠标位置。
+fr × Impossible de lire la position de la souris.
+pt × Não foi possível ler a posição do mouse.
+ru × Не удалось определить положение мыши.
+de × Mausposition konnte nicht gelesen werden.
+ja × マウスの位置を取得できませんでした。
+ko × 마우스 위치를 읽을 수 없습니다.
+it × Impossibile leggere la posizione del mouse.
+
+= ■ Se cumplió la condición de parada.
+en ■ The stop condition was met.
+zh ■ 已满足停止条件。
+fr ■ La condition d'arrêt est remplie.
+pt ■ A condição de parada foi cumprida.
+ru ■ Условие остановки выполнено.
+de ■ Die Stoppbedingung ist erfüllt.
+ja ■ 停止条件を満たしました。
+ko ■ 정지 조건을 충족했습니다.
+it ■ La condizione di arresto è soddisfatta.
+
+= ✔ '{}' completada.
+en ✔ '{}' completed.
+zh ✔ “{}”已完成。
+fr ✔ '{}' terminée.
+pt ✔ '{}' concluída.
+ru ✔ «{}» выполнен.
+de ✔ '{}' abgeschlossen.
+ja ✔ 「{}」が完了しました。
+ko ✔ '{}' 완료.
+it ✔ '{}' completato.

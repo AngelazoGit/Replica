@@ -3,7 +3,7 @@
 
 use crate::config::Config;
 use crate::i18n::{tr, trf};
-use crate::model::{Action, MissingAnchor, Route, Settings, Step, Target};
+use crate::model::{Action, MissingAnchor, Route, Settings, Step, Target, UNTIL_FILE, Until};
 use crate::vision;
 use image::RgbaImage;
 use rdev::{Button, EventType, Key};
@@ -39,6 +39,8 @@ pub struct State {
     pub config: Config,
     /// Siguiente paso de «ejecutar un paso».
     pub step_cursor: usize,
+    /// Aviso pendiente para la interfaz al terminar una reproducción: (bien, mensaje).
+    pub aviso: Option<(bool, String)>,
     /// La interfaz tiene cambios sin guardar en la ruta abierta (un atajo o el
     /// programador no deben cargar otra ruta encima).
     pub unsaved: bool,
@@ -133,13 +135,14 @@ impl Bot {
                 // Sin nombre: si no, aparecería marcada en la lista una ruta guardada que no está cargada.
                 route: Route::default(),
                 settings: Settings::default(),
-                record_name: "nueva_ruta".into(),
+                record_name: String::new(), // vacío = nombre automático con fecha y hora
                 log: VecDeque::new(),
                 progress: String::new(),
                 play: Progress::default(),
                 config: Config::load(),
                 step_cursor: 0,
                 unsaved: false,
+                aviso: None,
                 mouse: (0.0, 0.0),
                 last_step_at: Instant::now(),
                 last_move_at: Instant::now(),
@@ -244,6 +247,18 @@ impl Bot {
 
     pub fn set_repaint(&self, ctx: eframe::egui::Context) {
         *self.repaint.lock().unwrap() = Some(ctx);
+    }
+
+    /// Minimiza o restaura la ventana desde el motor: minimizada, la interfaz no se ejecuta
+    /// y no podría restaurarse sola. No llamar con el estado bloqueado.
+    fn minimizar(&self, si: bool) {
+        if self.state.lock().unwrap().config.no_minimize {
+            return;
+        }
+        if let Some(ctx) = self.repaint.lock().unwrap().as_ref() {
+            ctx.send_viewport_cmd(eframe::egui::ViewportCommand::Minimized(si));
+            ctx.request_repaint();
+        }
     }
 
     fn repaint(&self) {
@@ -388,7 +403,13 @@ impl Bot {
             }
             Mode::Idle => {
                 // Nunca pisar una ruta existente: nombre, nombre_2, nombre_3…
-                let base = crate::model::sanitize(&st.record_name);
+                let base = if st.record_name.trim().is_empty() {
+                    chrono::Local::now()
+                        .format("ruta_%Y-%m-%d_%H-%M")
+                        .to_string()
+                } else {
+                    crate::model::sanitize(&st.record_name)
+                };
                 let mut name = base.clone();
                 let mut n = 1;
                 while Route::dir(&name).exists() {
@@ -416,6 +437,7 @@ impl Bot {
                 st.mode = Mode::Recording;
                 st.last_step_at = Instant::now();
                 drop(st);
+                self.minimizar(true); // Replica se aparta: no estorba ni se graban clics sobre ella
                 self.log(trf(
                     "● Grabando ruta '{}'. Pulsa F9 para terminar.",
                     &[&name],
@@ -430,6 +452,7 @@ impl Bot {
                     st.route = std::mem::take(&mut st.prev_route);
                 }
                 drop(st);
+                self.minimizar(false);
                 if route.steps.is_empty() {
                     let _ = std::fs::remove_dir_all(Route::dir(&route.name));
                     self.log(tr("Grabación vacía: no se guarda nada."));
@@ -460,6 +483,7 @@ impl Bot {
                 std::mem::take(&mut st.rec_bad_anchors),
             );
             finish_route(&mut route, target, &bad);
+            recortar_esperas(&mut route.steps, st.settings.trim_wait_s);
             route.settings = Some(st.settings.clone());
             if st.route.name == route.name {
                 // Conserva ediciones hechas en el editor mientras se guardaba.
@@ -489,7 +513,7 @@ impl Bot {
     // ───────────────────────── Reproducción ─────────────────────────
 
     pub fn toggle_play(self: &Arc<Self>) {
-        let mut st = self.state.lock().unwrap();
+        let st = self.state.lock().unwrap();
         match st.mode {
             Mode::Playing => {
                 drop(st);
@@ -516,38 +540,68 @@ impl Bot {
                         &[&commands.join(" · ")],
                     ));
                 }
-                st.mode = Mode::Playing;
-                let route = st.route.clone();
-                let settings = st.settings.clone();
+                let (route, settings) = (st.route.clone(), st.settings.clone());
                 drop(st);
-                self.stop.store(false, Ordering::SeqCst);
-                self.paused.store(false, Ordering::SeqCst);
-                let bot = self.clone();
-                thread::spawn(move || {
-                    let mut player = Player::new(&bot, &route, &settings);
-                    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                        player.countdown(settings.countdown_s)?;
-                        bot.log(trf(
-                            "▶ Reproduciendo '{}' (F11 pausa · F12 para).",
-                            &[&route.name],
-                        ));
-                        player.run()
-                    }));
-                    player.release_all();
-                    match result {
-                        Ok(Ok(())) => bot.log(tr("✔ Ruta completada.")),
-                        Ok(Err(e)) => bot.log(format!("× {e}")),
-                        Err(_) => bot.log(tr("× Error interno durante la reproducción.")),
-                    }
-                    bot.paused.store(false, Ordering::SeqCst);
-                    let mut st = bot.state.lock().unwrap_or_else(|e| e.into_inner());
-                    st.mode = Mode::Idle;
-                    st.progress.clear();
-                    st.play = Progress::default();
-                    drop(st);
-                    bot.repaint();
-                });
+                self.start_play(route, settings);
             }
+        }
+    }
+
+    /// Reproduce una ruta que no es la abierta (recetas rápidas) sin tocar el editor.
+    pub fn play_receta(self: &Arc<Self>, route: Route, settings: Settings) {
+        self.start_play(route, settings);
+    }
+
+    fn start_play(self: &Arc<Self>, route: Route, settings: Settings) {
+        {
+            let mut st = self.state.lock().unwrap();
+            if st.mode != Mode::Idle || self.is_saving() {
+                drop(st);
+                return self.log(trf(
+                    "{}: '{}' no se lanza, Replica está ocupada.",
+                    &[&tr("Reproducir"), &route.name],
+                ));
+            }
+            st.mode = Mode::Playing;
+        }
+        {
+            self.stop.store(false, Ordering::SeqCst);
+            self.paused.store(false, Ordering::SeqCst);
+            let bot = self.clone();
+            thread::spawn(move || {
+                let mut player = Player::new(&bot, &route, &settings);
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    player.countdown(settings.countdown_s)?;
+                    bot.log(trf(
+                        "▶ Reproduciendo '{}' (F11 pausa · F12 para).",
+                        &[&route.name],
+                    ));
+                    player.run()
+                }));
+                player.release_all();
+                let aviso = match result {
+                    Ok(Ok(())) => Some((true, trf("✔ '{}' completada.", &[&route.name]))),
+                    // Parada a mano (F12, F10, cerrar): no hace falta avisar.
+                    Ok(Err(_)) if bot.stopped() => None,
+                    Ok(Err(e)) => Some((false, format!("× {e}"))),
+                    Err(_) => Some((
+                        false,
+                        tr("× Error interno durante la reproducción.").to_string(),
+                    )),
+                };
+                match &aviso {
+                    Some((_, m)) => bot.log(m.clone()),
+                    None => bot.log(tr("× Detenido por el usuario.")),
+                }
+                bot.paused.store(false, Ordering::SeqCst);
+                let mut st = bot.state.lock().unwrap_or_else(|e| e.into_inner());
+                st.aviso = aviso;
+                st.mode = Mode::Idle;
+                st.progress.clear();
+                st.play = Progress::default();
+                drop(st);
+                bot.repaint();
+            });
         }
     }
 
@@ -576,7 +630,6 @@ impl Bot {
     pub fn load_route(&self, name: &str) -> anyhow::Result<()> {
         let r = Route::load(name)?;
         let mut st = self.state.lock().unwrap();
-        st.record_name = r.name.clone();
         if let Some(cfg) = &r.settings {
             st.settings = cfg.clone();
         }
@@ -684,6 +737,36 @@ impl Bot {
         }
     }
 
+    /// Captura en 3 s lo que haya bajo el ratón como imagen de parada de la ruta abierta.
+    pub fn capturar_until(self: &Arc<Self>, appear: bool) {
+        let name = self.state.lock().unwrap().route.name.clone();
+        if name.is_empty() || !Route::dir(&name).exists() {
+            return self.log(tr("Guarda la ruta antes de capturar la imagen de parada."));
+        }
+        self.log(tr(
+            "Pon el ratón sobre lo que hay que vigilar: se captura en 3 s.",
+        ));
+        let bot = self.clone();
+        thread::spawn(move || {
+            thread::sleep(Duration::from_secs(3));
+            let mouse_position::mouse_position::Mouse::Position { x, y } =
+                mouse_position::mouse_position::Mouse::get_mouse_position()
+            else {
+                return bot.log(tr("× No se pudo leer la posición del ratón."));
+            };
+            let (x, y) = (x as f64, y as f64);
+            let path = Route::dir(&name).join(UNTIL_FILE);
+            match vision::capture_anchor(x, y).and_then(|img| Ok(img.save(&path)?)) {
+                Ok(()) => {
+                    bot.state.lock().unwrap().settings.until = Some(Until { x, y, appear });
+                    bot.log(tr("Imagen de parada capturada (pulsa Guardar)."));
+                }
+                Err(e) => bot.log(trf("× No se pudo capturar: {}", &[&e])),
+            }
+            bot.repaint();
+        });
+    }
+
     /// Ejecuta solo el paso marcado por `step_cursor` y avanza al siguiente.
     pub fn step_once(self: &Arc<Self>) {
         let mut st = self.state.lock().unwrap();
@@ -747,6 +830,22 @@ impl Bot {
     fn set_progress(&self, play: Progress) {
         self.state.lock().unwrap().play = play;
         self.repaint();
+    }
+}
+
+/// Recorta las esperas de más de `max_s` segundos (0 = no tocar) y quita los movimientos
+/// de ratón del final, que no hacen nada.
+fn recortar_esperas(steps: &mut Vec<Step>, max_s: u32) {
+    if max_s > 0 {
+        for s in steps.iter_mut() {
+            s.delay_ms = s.delay_ms.min(max_s as u64 * 1000);
+        }
+    }
+    while matches!(
+        steps.last().map(|s| &s.action),
+        Some(Action::MouseMove { .. })
+    ) {
+        steps.pop();
     }
 }
 
@@ -855,6 +954,8 @@ struct Player<'a> {
     keys_down: HashSet<Key>,
     buttons_down: Vec<Button>,
     rng: u64,
+    /// Nivel de rutas encadenadas (para no entrar en un bucle infinito).
+    depth: u32,
 }
 
 impl<'a> Player<'a> {
@@ -872,6 +973,7 @@ impl<'a> Player<'a> {
             keys_down: HashSet::new(),
             buttons_down: vec![],
             rng: seed | 1,
+            depth: 0,
         }
     }
 
@@ -967,13 +1069,42 @@ impl<'a> Player<'a> {
     }
 
     fn run(&mut self) -> anyhow::Result<()> {
-        let mut lap = 0u32;
+        let (mut lap, mut fallos) = (0u32, 0u32);
         loop {
             lap += 1;
-            self.locate_window(lap == 1)?;
-            let mut clock = Instant::now();
-            let steps = self.route.steps.len();
-            for (i, step) in self.route.steps.iter().enumerate() {
+            if let Err(e) = self.vuelta(lap) {
+                // Reintento: repetir la vuelta desde el principio (si no fue el usuario quien paró).
+                if self.bot.stopped() || fallos >= self.cfg.retries {
+                    return Err(e);
+                }
+                fallos += 1;
+                self.release_all();
+                self.bot.log(trf(
+                    "Reintento {} de {}: {}",
+                    &[&fallos, &self.cfg.retries, &e],
+                ));
+                lap -= 1;
+                self.sleep(1000)?;
+                continue;
+            }
+            if self.condicion_parada()? {
+                self.bot.log(tr("■ Se cumplió la condición de parada."));
+                return Ok(());
+            }
+            if self.cfg.loops != 0 && lap >= self.cfg.loops {
+                return Ok(());
+            }
+            self.sleep(self.cfg.pause_between_loops_ms)?;
+        }
+    }
+
+    /// Una vuelta completa de la ruta.
+    fn vuelta(&mut self, lap: u32) -> anyhow::Result<()> {
+        self.locate_window(lap == 1)?;
+        let mut clock = Instant::now();
+        let steps = self.route.steps.len();
+        for (i, step) in self.route.steps.iter().enumerate() {
+            if self.depth == 0 {
                 self.bot.set_progress(Progress {
                     lap,
                     laps: self.cfg.loops,
@@ -981,22 +1112,36 @@ impl<'a> Player<'a> {
                     steps,
                     countdown: 0,
                 });
-                clock += self.scaled(step.delay_ms);
-                self.sleep_until(&mut clock)?;
-                self.exec(&step.action)?;
-                // Reloj absoluto: lo que tarda simular eventos no se acumula como retraso, pero tras
-                // una espera larga (ancla, Wait) no se disparan de golpe los pasos atrasados.
-                let catch_up = Instant::now()
-                    .checked_sub(Duration::from_millis(50))
-                    .unwrap_or(clock);
-                clock = clock.max(catch_up);
             }
-            self.release_all();
-            if self.cfg.loops != 0 && lap >= self.cfg.loops {
-                return Ok(());
-            }
-            self.sleep(self.cfg.pause_between_loops_ms)?;
+            clock += self.scaled(step.delay_ms);
+            self.sleep_until(&mut clock)?;
+            self.exec(&step.action)?;
+            // Reloj absoluto: lo que tarda simular eventos no se acumula como retraso, pero tras
+            // una espera larga (ancla, Wait) no se disparan de golpe los pasos atrasados.
+            let catch_up = Instant::now()
+                .checked_sub(Duration::from_millis(50))
+                .unwrap_or(clock);
+            clock = clock.max(catch_up);
         }
+        self.release_all();
+        Ok(())
+    }
+
+    /// «Repetir hasta que…»: ¿apareció (o desapareció) la imagen de parada?
+    fn condicion_parada(&mut self) -> anyhow::Result<bool> {
+        let Some(u) = self.cfg.until.clone() else {
+            return Ok(false);
+        };
+        let path = self.route.anchor_path(UNTIL_FILE);
+        let Ok(img) = image::open(&path) else {
+            return Ok(false);
+        };
+        let tpl = image::imageops::grayscale(&img.to_rgba8());
+        let (x, y) = self.map(u.x, u.y);
+        let visible = vision::find_near(&[tpl], x, y, self.cfg.search_radius)
+            .map(|m| m.score >= self.cfg.threshold)
+            .unwrap_or(false);
+        Ok(visible == u.appear)
     }
 
     fn exec(&mut self, action: &Action) -> anyhow::Result<()> {
@@ -1099,6 +1244,32 @@ impl<'a> Player<'a> {
                 }
             }
             Action::Wait { ms } => self.sleep(*ms)?,
+            Action::ClickHere { button } => {
+                self.send(EventType::ButtonPress(*button));
+                thread::sleep(Duration::from_millis(30));
+                self.send(EventType::ButtonRelease(*button));
+            }
+            Action::RunRoute { name } => {
+                if self.depth >= 4 {
+                    anyhow::bail!("{}", trf("Demasiadas rutas encadenadas en '{}'.", &[name]));
+                }
+                let sub = Route::load(name).map_err(|e| {
+                    anyhow::anyhow!("{}", trf("No se pudo cargar '{}': {}", &[name, &e]))
+                })?;
+                if !self.bot.state.lock().unwrap().config.is_trusted(&sub) {
+                    anyhow::bail!("{}", trf("'{}' ejecuta programas sin permitir.", &[name]));
+                }
+                // Con los ajustes de la ruta encadenada (los suyos), una sola vuelta.
+                let cfg = Settings {
+                    loops: 1,
+                    ..sub.settings.clone().unwrap_or_else(|| self.cfg.clone())
+                };
+                let mut p = Player::new(self.bot, &sub, &cfg);
+                p.depth = self.depth + 1;
+                let r = p.vuelta(1);
+                p.release_all();
+                r?;
+            }
         }
         Ok(())
     }
@@ -1411,6 +1582,60 @@ mod tests {
             let _ = tx.send(Player::new(&bot, &r, &cfg).run());
         });
         rx.recv_timeout(Duration::from_secs(3)).ok()
+    }
+
+    #[test]
+    fn trim_caps_long_waits_and_drops_trailing_moves() {
+        let mut steps = vec![
+            Step {
+                delay_ms: 90_000,
+                action: Action::KeyDown { key: Key::KeyW },
+            },
+            Step {
+                delay_ms: 500,
+                action: Action::KeyUp { key: Key::KeyW },
+            },
+            mv(10),
+            mv(10),
+        ];
+        recortar_esperas(&mut steps, 5);
+        assert_eq!(steps.len(), 2, "sin movimientos al final");
+        assert_eq!(steps[0].delay_ms, 5_000);
+        assert_eq!(steps[1].delay_ms, 500);
+    }
+
+    #[test]
+    fn retries_repeat_the_loop_then_give_up() {
+        let bot = Bot::new();
+        // Encadenar una ruta que no existe: falla siempre.
+        let r = route(
+            vec![Action::RunRoute {
+                name: "__no_existe__".into(),
+            }],
+            None,
+        );
+        let cfg = Settings {
+            retries: 2,
+            speed: 4.0,
+            humanize: false,
+            ..Default::default()
+        };
+        let result = run_with_timeout(&bot, r, cfg).expect("no terminó");
+        assert!(result.is_err());
+        let log = bot
+            .state
+            .lock()
+            .unwrap()
+            .log
+            .iter()
+            .cloned()
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(
+            log.contains("Reintento 1 de 2") && log.contains("Reintento 2 de 2"),
+            "{log}"
+        );
+        assert!(!log.contains("Reintento 3"));
     }
 
     #[test]

@@ -21,6 +21,14 @@ tamaño o el juego todavía está cargando.
 - **Humanización**: pequeñas variaciones aleatorias de tiempo (±15 %) y posición (±2 px).
 - **Editor de pasos**: cambia retardos, borra, reordena y añade pasos a mano:
   escribir texto, pulsar Enter, ejecutar programas y esperas.
+- **Recetas rápidas sin grabar nada**: autoclicker, anti-AFK y repetir tecla, con un botón en Inicio.
+- **Grabar sin pensar**: nombre automático con fecha y hora, Replica se minimiza mientras grabas,
+  quita los movimientos sobrantes del final y, si quieres, recorta las esperas largas.
+- **Aviso al terminar o fallar**: sonido (Windows), parpadeo en la barra de tareas y aviso en la app.
+- **Reintentar en vez de parar**: si un paso falla, la vuelta empieza otra vez (hasta N veces).
+- **Repetir hasta que…**: las vueltas siguen hasta que una imagen aparezca o desaparezca
+  (por ejemplo, «inventario lleno»).
+- **Encadenar rutas**: un paso que ejecuta otra ruta («ir → farmear → volver → vender»).
 - **Control de reproducción**: pausa y sigue con `F11` (suelta las teclas mantenidas y las vuelve a
   pulsar al seguir), ejecuta un solo paso para depurar, cuenta atrás antes de empezar y barra de
   progreso de la vuelta.
@@ -163,6 +171,27 @@ que lo hace, Replica muestra la lista de comandos y no la reproduce hasta que pu
 Hazlo solo con rutas de alguien de confianza: esos comandos se ejecutan con tus permisos.
 Las rutas que grabas o editas tú no lo piden.
 
+### Recetas rápidas
+
+En **Inicio** hay tres recetas que no hace falta grabar. Se repiten hasta que pulsas `F12` y
+empiezan tras una cuenta atrás de 3 s:
+
+| Receta | Qué hace |
+|---|---|
+| **Autoclicker** | Clic izquierdo o derecho donde esté el ratón, cada X ms. |
+| **Anti-AFK** | Pulsa una tecla cada N minutos (con tiempos variados) para no quedar inactivo. |
+| **Repetir tecla** | Pulsa una tecla cada X ms. |
+
+### Repetir hasta que…, reintentos y rutas encadenadas
+
+- **Parar cuando**: en *Ajustes de la ruta*, elige «aparezca» o «desaparezca», pon el ratón sobre
+  lo que hay que vigilar y en 3 s se captura (`until.png`). Al final de cada vuelta Replica mira si
+  esa imagen está y para cuando se cumple la condición. Con vueltas en `0` repite hasta entonces.
+- **Reintentos**: si un paso falla (un recorte que no aparece, la ventana que no está…), la vuelta
+  empieza de nuevo desde el principio hasta N veces antes de rendirse.
+- **Ejecutar ruta**: en el editor, elige otra ruta y pulsa *+ Ejecutar ruta*. Se ejecuta una vuelta
+  suya con sus propios ajustes y luego sigue la actual (hasta 4 niveles de encadenado).
+
 ### Programador y atajos de ruta
 
 En **Programador** eliges una ruta y cuándo lanzarla: cada día a una hora o cada X minutos.
@@ -198,6 +227,9 @@ Se guardan con cada ruta (*Rutas → Ajustes de la ruta*).
 | **pausa entre vueltas** | Espera entre una vuelta y la siguiente. |
 | **cuenta atrás** | Segundos antes de empezar, para volver a la ventana del juego. |
 | **atajo de la ruta** | `F1`–`F8` para lanzarla en cualquier momento. |
+| **reintentos** | Veces que se repite una vuelta que falla antes de parar. |
+| **parar cuando** | Nunca, o cuando la imagen de parada aparezca o desaparezca. |
+| **recortar esperas** | Al grabar, las esperas de más de N s se acortan a N s (`0` = no). |
 | **humanizar** | Variación aleatoria de tiempos y posición de los clics. |
 | **grabar movimientos del ratón** | Si se desactiva, solo se graban los clics (rutas más ligeras). |
 | **verificar pantalla antes de clicar** | Activa la búsqueda de anclas visuales. |

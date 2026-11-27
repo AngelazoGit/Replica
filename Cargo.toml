@@ -1,6 +1,6 @@
 [package]
 name = "replica"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 rust-version = "1.95"
 description = "Graba lo que haces con ratón y teclado, mira tu pantalla y lo repite por ti: rutas de farmeo, tareas repetitivas y comandos."
@@ -25,6 +25,8 @@ sys-locale = "0.3.2"
 
 [target.'cfg(windows)'.dependencies]
 tray-icon = "0.27"
+# Ya está en el árbol (tray-icon): solo para el pitido de aviso.
+windows-sys = { version = "0.61", features = ["Win32_System_Diagnostics_Debug", "Win32_UI_WindowsAndMessaging"] }
 
 [profile.release]
 strip = true # sin símbolos de depuración: el .exe pasa de ~25 MB a menos de la mitad
