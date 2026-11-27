@@ -2,6 +2,7 @@
 //! y reproductor de rutas con verificación visual.
 
 use crate::config::Config;
+use crate::i18n::{tr, trf};
 use crate::model::{Action, MissingAnchor, Route, Settings, Step, Target};
 use crate::vision;
 use image::RgbaImage;
@@ -180,7 +181,7 @@ impl Bot {
                         None => vision::capture_anchor(x, y),
                     };
                     if let Err(e) = img.and_then(|img| Ok(img.save(&path)?)) {
-                        b.log(format!("Clic sin ancla visual: {e}"));
+                        b.log(trf("Clic sin ancla visual: {}", &[&e]));
                         let mut st = b.state.lock().unwrap();
                         if st.rec_id == rec_id {
                             let file = path.file_name().unwrap().to_string_lossy().into_owned();
@@ -293,7 +294,7 @@ impl Bot {
                 if let Some(name) = name {
                     let bot = self.clone();
                     // En otro hilo: cargar la ruta no debe bloquear el hook de teclado.
-                    thread::spawn(move || bot.play_named(&name, "atajo"));
+                    thread::spawn(move || bot.play_named(&name, tr("atajo")));
                     return;
                 }
             }
@@ -360,7 +361,7 @@ impl Bot {
             action,
         });
         let n = st.route.steps.len();
-        st.progress = format!("Grabando… {n} pasos");
+        st.progress = trf("Grabando… {} pasos", &[&n]);
         drop(st);
         self.repaint();
     }
@@ -372,11 +373,11 @@ impl Bot {
         match st.mode {
             Mode::Playing => {
                 drop(st);
-                self.log("Para la reproducción antes de grabar (F12).");
+                self.log(tr("Para la reproducción antes de grabar (F12)."));
             }
             Mode::Idle if self.saving.load(Ordering::SeqCst) => {
                 drop(st);
-                self.log("Terminando de guardar la grabación anterior…");
+                self.log(tr("Terminando de guardar la grabación anterior…"));
             }
             Mode::Idle => {
                 // Nunca pisar una ruta existente: nombre, nombre_2, nombre_3…
@@ -408,7 +409,10 @@ impl Bot {
                 st.mode = Mode::Recording;
                 st.last_step_at = Instant::now();
                 drop(st);
-                self.log(format!("● Grabando ruta '{name}'. Pulsa F9 para terminar."));
+                self.log(trf(
+                    "● Grabando ruta '{}'. Pulsa F9 para terminar.",
+                    &[&name],
+                ));
             }
             Mode::Recording => {
                 st.mode = Mode::Idle;
@@ -421,7 +425,7 @@ impl Bot {
                 drop(st);
                 if route.steps.is_empty() {
                     let _ = std::fs::remove_dir_all(Route::dir(&route.name));
-                    self.log("Grabación vacía: no se guarda nada.");
+                    self.log(tr("Grabación vacía: no se guarda nada."));
                     return self.repaint();
                 }
                 // Guardar cuando terminen sus anclas (en otro hilo: este puede ser el hook de teclado,
@@ -456,17 +460,19 @@ impl Bot {
             }
         }
         match route.save() {
-            Ok(()) => self.log(format!(
-                "■ Ruta '{}' guardada: {} pasos, {:.1} s. {}",
-                route.name,
-                route.steps.len(),
-                route.duration_ms() as f64 / 1000.0,
-                match &route.target {
-                    Some(t) => format!("Ventana objetivo: {}", t.label()),
-                    None => "Sin ventana objetivo: coordenadas de pantalla.".into(),
-                }
+            Ok(()) => self.log(trf(
+                "■ Ruta '{}' guardada: {} pasos, {} s. {}",
+                &[
+                    &route.name,
+                    &route.steps.len(),
+                    &format!("{:.1}", route.duration_ms() as f64 / 1000.0),
+                    &match &route.target {
+                        Some(t) => trf("Ventana objetivo: {}", &[&t.label()]),
+                        None => tr("Sin ventana objetivo: coordenadas de pantalla.").into(),
+                    },
+                ],
             )),
-            Err(e) => self.log(format!("Error guardando ruta: {e}")),
+            Err(e) => self.log(trf("× No se pudo guardar la ruta: {}", &[&e])),
         }
         self.refresh_hotkeys();
         self.saving.store(false, Ordering::SeqCst);
@@ -484,23 +490,23 @@ impl Bot {
             }
             Mode::Recording => {
                 drop(st);
-                self.log("Termina la grabación primero (F9).");
+                self.log(tr("Termina la grabación primero (F9)."));
             }
             Mode::Idle => {
                 if self.saving.load(Ordering::SeqCst) {
                     drop(st);
-                    return self.log("Terminando de guardar la grabación…");
+                    return self.log(tr("Terminando de guardar la grabación…"));
                 }
                 if st.route.steps.is_empty() {
                     drop(st);
-                    return self.log("La ruta está vacía: graba o carga una.");
+                    return self.log(tr("La ruta está vacía: graba o carga una."));
                 }
                 let commands = st.route.commands();
                 if !st.commands_ok() {
                     drop(st);
-                    return self.log(format!(
+                    return self.log(trf(
                         "Esta ruta ejecuta programas: {}. Revísalos y pulsa «permitir» antes de reproducir.",
-                        commands.join(" · ")
+                        &[&commands.join(" · ")],
                     ));
                 }
                 st.mode = Mode::Playing;
@@ -514,17 +520,17 @@ impl Bot {
                     let mut player = Player::new(&bot, &route, &settings);
                     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                         player.countdown(settings.countdown_s)?;
-                        bot.log(format!(
+                        bot.log(trf(
                             "▶ Reproduciendo '{}' (F11 pausa · F12 para).",
-                            route.name
+                            &[&route.name],
                         ));
                         player.run()
                     }));
                     player.release_all();
                     match result {
-                        Ok(Ok(())) => bot.log("✔ Ruta completada."),
+                        Ok(Ok(())) => bot.log(tr("✔ Ruta completada.")),
                         Ok(Err(e)) => bot.log(format!("× {e}")),
-                        Err(_) => bot.log("× Error interno durante la reproducción."),
+                        Err(_) => bot.log(tr("× Error interno durante la reproducción.")),
                     }
                     bot.paused.store(false, Ordering::SeqCst);
                     let mut st = bot.state.lock().unwrap_or_else(|e| e.into_inner());
@@ -545,9 +551,9 @@ impl Bot {
         }
         let now = !self.paused.fetch_xor(true, Ordering::SeqCst);
         self.log(if now {
-            "En pausa (F11 para seguir)."
+            tr("En pausa (F11 para seguir).")
         } else {
-            "▶ Reanudando."
+            tr("▶ Reanudando.")
         });
     }
 
@@ -591,7 +597,7 @@ impl Bot {
     pub fn save_config(&self) {
         let cfg = self.state.lock().unwrap().config.clone();
         if let Err(e) = cfg.save() {
-            self.log(format!("No se pudo guardar la configuración: {e}"));
+            self.log(trf("× No se pudo guardar la configuración: {}", &[&e]));
         }
     }
 
@@ -623,24 +629,30 @@ impl Bot {
     /// Nunca ejecuta programas que el usuario no haya permitido.
     pub fn play_named(self: &Arc<Self>, name: &str, origin: &str) {
         if self.mode() != Mode::Idle || self.is_saving() {
-            return self.log(format!(
-                "{origin}: '{name}' no se lanza, Replica está ocupada."
+            return self.log(trf(
+                "{}: '{}' no se lanza, Replica está ocupada.",
+                &[&origin, &name],
             ));
         }
         if self.state.lock().unwrap().unsaved {
-            return self.log(format!(
-                "{origin}: '{name}' no se lanza: la ruta abierta tiene cambios sin guardar."
+            return self.log(trf(
+                "{}: '{}' no se lanza: la ruta abierta tiene cambios sin guardar.",
+                &[&origin, &name],
             ));
         }
         if let Err(e) = self.load_route(name) {
-            return self.log(format!("{origin}: no se pudo cargar '{name}': {e}"));
-        }
-        if !self.state.lock().unwrap().commands_ok() {
-            return self.log(format!(
-                "{origin}: '{name}' ejecuta programas sin permitir; ábrela y pulsa «permitir»."
+            return self.log(trf(
+                "× {}: no se pudo cargar '{}': {}",
+                &[&origin, &name, &e],
             ));
         }
-        self.log(format!("{origin}: lanzando '{name}'."));
+        if !self.state.lock().unwrap().commands_ok() {
+            return self.log(trf(
+                "{}: '{}' ejecuta programas sin permitir; ábrela y pulsa «permitir».",
+                &[&origin, &name],
+            ));
+        }
+        self.log(trf("{}: lanzando '{}'.", &[&origin, &name]));
         self.toggle_play();
     }
 
@@ -661,7 +673,7 @@ impl Bot {
         }
         self.save_config();
         for name in due {
-            self.play_named(&name, "Programador"); // si coinciden varias, las demás se saltan
+            self.play_named(&name, tr("Programador")); // si coinciden varias, las demás se saltan
         }
     }
 
@@ -673,7 +685,7 @@ impl Bot {
         }
         if !st.commands_ok() {
             drop(st);
-            return self.log("Esta ruta ejecuta programas: pulsa «permitir» antes.");
+            return self.log(tr("Esta ruta ejecuta programas: pulsa «permitir» antes."));
         }
         let i = st.step_cursor.min(st.route.steps.len() - 1);
         st.mode = Mode::Playing;
@@ -688,12 +700,11 @@ impl Bot {
                 .and_then(|_| player.exec(&route.steps[i].action));
             player.release_all(); // paso a paso no deja nada pulsado entre pasos
             match result {
-                Ok(()) => bot.log(format!(
+                Ok(()) => bot.log(trf(
                     "Paso {} ejecutado: {}",
-                    i + 1,
-                    route.steps[i].action.describe()
+                    &[&(i + 1), &route.steps[i].action.describe()],
                 )),
-                Err(e) => bot.log(format!("× Paso {}: {e}", i + 1)),
+                Err(e) => bot.log(trf("× Paso {}: {}", &[&(i + 1), &e])),
             }
             let mut st = bot.state.lock().unwrap();
             st.mode = Mode::Idle;
@@ -907,7 +918,7 @@ impl<'a> Player<'a> {
         }
         while self.bot.is_paused() {
             if self.bot.stopped() {
-                anyhow::bail!("Detenido por el usuario.");
+                anyhow::bail!("{}", tr("Detenido por el usuario."));
             }
             thread::sleep(Duration::from_millis(20));
         }
@@ -926,7 +937,7 @@ impl<'a> Player<'a> {
     fn sleep_until(&mut self, end: &mut Instant) -> anyhow::Result<()> {
         loop {
             if self.bot.stopped() {
-                anyhow::bail!("Detenido por el usuario.");
+                anyhow::bail!("{}", tr("Detenido por el usuario."));
             }
             *end += self.hold_while_paused()?;
             let now = Instant::now();
@@ -939,7 +950,10 @@ impl<'a> Player<'a> {
 
     fn send(&self, ev: EventType) {
         if let Err(e) = rdev::simulate(&ev) {
-            self.bot.log(format!("No se pudo simular {ev:?}: {e:?}"));
+            self.bot.log(trf(
+                "× No se pudo simular {}: {}",
+                &[&format!("{ev:?}"), &format!("{e:?}")],
+            ));
         }
         // Algunos sistemas pierden eventos si llegan demasiado juntos.
         thread::sleep(Duration::from_millis(2));
@@ -993,7 +1007,7 @@ impl<'a> Player<'a> {
                 self.locate_window(false)?; // la ventana puede haberse movido a mitad de vuelta
                 let (mut px, mut py) = self.map(*x, *y);
                 if self.bot.stopped() {
-                    anyhow::bail!("Detenido por el usuario.");
+                    anyhow::bail!("{}", tr("Detenido por el usuario."));
                 }
                 if self.cfg.use_anchors {
                     if let Some(file) = anchor {
@@ -1027,13 +1041,16 @@ impl<'a> Player<'a> {
             Action::TypeText { text } => {
                 for c in text.chars() {
                     if self.bot.stopped() {
-                        anyhow::bail!("Detenido por el usuario.");
+                        anyhow::bail!("{}", tr("Detenido por el usuario."));
                     }
                     // Letras, números, espacio y Enter con teclas físicas (los juegos leen teclas);
                     // símbolos, tildes, ñ… como Unicode, que no depende de la distribución del teclado.
                     if !(c.is_ascii_alphanumeric() || matches!(c, ' ' | '\n' | '\t')) {
                         if let Err(e) = type_unicode(c) {
-                            self.bot.log(format!("No se pudo escribir {c:?}: {e}"));
+                            self.bot.log(trf(
+                                "× No se pudo escribir {}: {}",
+                                &[&format!("{c:?}"), &e],
+                            ));
                         }
                         thread::sleep(Duration::from_millis(15));
                         continue;
@@ -1050,14 +1067,15 @@ impl<'a> Player<'a> {
                             }
                             thread::sleep(Duration::from_millis(15));
                         }
-                        None => self
-                            .bot
-                            .log(format!("Carácter no soportado al escribir: {c:?}")),
+                        None => self.bot.log(trf(
+                            "Carácter no soportado al escribir: {}",
+                            &[&format!("{c:?}")],
+                        )),
                     }
                 }
             }
             Action::RunCommand { command } => {
-                self.bot.log(format!("Ejecutando: {command}"));
+                self.bot.log(trf("Ejecutando: {}", &[command]));
                 #[cfg(windows)]
                 let r = std::process::Command::new("cmd")
                     .args(["/C", command])
@@ -1068,7 +1086,9 @@ impl<'a> Player<'a> {
                     .spawn();
                 match r {
                     Ok(mut child) => drop(thread::spawn(move || child.wait())),
-                    Err(e) => self.bot.log(format!("Error al ejecutar '{command}': {e}")),
+                    Err(e) => self
+                        .bot
+                        .log(trf("× Error al ejecutar '{}': {}", &[command, &e])),
                 }
             }
             Action::Wait { ms } => self.sleep(*ms)?,
@@ -1084,21 +1104,36 @@ impl<'a> Player<'a> {
         };
         let now = vision::find_window(rec);
         if now.is_none() && self.cfg.on_missing == MissingAnchor::Stop {
-            anyhow::bail!("No encuentro la ventana de '{}'. Ruta detenida.", rec.app);
+            anyhow::bail!(
+                "{}",
+                trf(
+                    "No encuentro la ventana de '{}'. Ruta detenida.",
+                    &[&rec.app]
+                )
+            );
         }
         if first || now != self.window_now {
             let msg = match &now {
-                Some(n) if n == rec => format!("Ventana objetivo: {}", n.label()),
+                Some(n) if n == rec => trf("Ventana objetivo: {}", &[&n.label()]),
                 Some(n) => {
                     let (sx, sy) = rec.scale_to(n);
-                    format!(
-                        "Ventana en ({}, {}) {}×{} (grabada {}×{}): escala {sx:.2}×{sy:.2}.",
-                        n.x, n.y, n.w, n.h, rec.w, rec.h
+                    trf(
+                        "Ventana en ({}, {}) {}×{} (grabada {}×{}): escala {}×{}.",
+                        &[
+                            &n.x,
+                            &n.y,
+                            &n.w,
+                            &n.h,
+                            &rec.w,
+                            &rec.h,
+                            &format!("{sx:.2}"),
+                            &format!("{sy:.2}"),
+                        ],
                     )
                 }
-                None => format!(
+                None => trf(
                     "No encuentro la ventana de '{}': uso las coordenadas grabadas.",
-                    rec.app
+                    &[&rec.app],
                 ),
             };
             self.bot.log(msg);
@@ -1132,7 +1167,7 @@ impl<'a> Player<'a> {
             .or_insert_with(|| image::open(&path).ok().map(|i| i.to_rgba8()))
             .clone();
         let Some(tpl) = tpl else {
-            return self.anchor_missing(&format!("No se puede leer el ancla {file}"), x, y);
+            return self.anchor_missing(&trf("No se puede leer el ancla {}", &[&file]), x, y);
         };
         // Otra resolución: los juegos escalan su interfaz con la ventana y las apps de
         // escritorio no, así que se prueba el ancla escalada y la original.
@@ -1157,24 +1192,35 @@ impl<'a> Player<'a> {
             match vision::find_near(&tpls, x, y, radius) {
                 Ok(m) if m.score >= self.cfg.threshold => {
                     if (m.x - x).abs() > 3.0 || (m.y - y).abs() > 3.0 {
-                        self.bot.log(format!(
-                            "Ancla desplazada: ({x:.0},{y:.0}) → ({:.0},{:.0}) [{:.2}]",
-                            m.x, m.y, m.score
+                        self.bot.log(trf(
+                            "Ancla desplazada: {} → {} [{}]",
+                            &[
+                                &format!("({x:.0},{y:.0})"),
+                                &format!("({:.0},{:.0})", m.x, m.y),
+                                &format!("{:.2}", m.score),
+                            ],
                         ));
                     }
                     return Ok((m.x, m.y));
                 }
                 Ok(m) => best = best.max(m.score),
                 Err(e) => {
-                    return self.anchor_missing(&format!("Captura de pantalla falló ({e})"), x, y);
+                    return self.anchor_missing(
+                        &trf("Captura de pantalla falló ({})", &[&e]),
+                        x,
+                        y,
+                    );
                 }
             }
             if Instant::now() >= deadline {
-                let why = format!("Ancla {file} no apareció en pantalla (mejor {best:.2})");
+                let why = trf(
+                    "Ancla {} no apareció en pantalla (mejor {})",
+                    &[&file, &format!("{best:.2}")],
+                );
                 return self.anchor_missing(&why, x, y);
             }
             if self.bot.stopped() {
-                anyhow::bail!("Detenido por el usuario.");
+                anyhow::bail!("{}", tr("Detenido por el usuario."));
             }
             thread::sleep(Duration::from_millis(150));
         }
@@ -1184,9 +1230,10 @@ impl<'a> Player<'a> {
     /// nunca se clica sin verificar.
     fn anchor_missing(&self, why: &str, x: f64, y: f64) -> anyhow::Result<(f64, f64)> {
         match self.cfg.on_missing {
-            MissingAnchor::Stop => anyhow::bail!("{why}. Ruta detenida."),
+            MissingAnchor::Stop => anyhow::bail!("{}", trf("{}. Ruta detenida.", &[&why])),
             MissingAnchor::ClickAnyway => {
-                self.bot.log(format!("{why}; clic en la posición grabada."));
+                self.bot
+                    .log(trf("{}; clic en la posición grabada.", &[&why]));
                 Ok((x, y))
             }
         }

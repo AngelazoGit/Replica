@@ -12,6 +12,7 @@
 mod app;
 mod bot;
 mod config;
+mod i18n;
 mod model;
 mod theme;
 #[cfg(windows)]
@@ -39,9 +40,15 @@ fn main() -> eframe::Result<()> {
             // El bot se crea después de la ventana: en Windows, winit ya ha activado el modo
             // DPI-aware y el hook, SendInput y las capturas usan los mismos píxeles físicos.
             let bot = bot::Bot::new();
-            let tema = bot.state.lock().unwrap().config.tema;
-            theme::configurar_estilo(&cc.egui_ctx, tema);
-            bot.log("Replica en línea. F9 grabar · F10 reproducir · F11 pausa · F12 parar.");
+            let (tema, lang) = {
+                let st = bot.state.lock().unwrap();
+                (st.config.tema, st.config.lang.clone())
+            };
+            i18n::set(lang.as_deref().unwrap_or_else(|| i18n::del_sistema()));
+            theme::configurar_estilo(&cc.egui_ctx, tema, i18n::codigo());
+            bot.log(i18n::tr(
+                "Replica en línea. F9 grabar · F10 reproducir · F11 pausa · F12 parar.",
+            ));
             let quit = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
             #[allow(unused_mut)]
             let mut app = app::App::new(cc, bot.clone(), quit.clone());

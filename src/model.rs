@@ -1,6 +1,7 @@
 //! Modelo de datos: una "ruta" es una secuencia de pasos con marcas de tiempo.
 //! Se guarda en `routes/<nombre>/route.json` junto a las anclas visuales (PNG).
 
+use crate::i18n::{tr, trf};
 use rdev::{Button, Key};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -230,30 +231,44 @@ pub fn sanitize(name: &str) -> String {
     if s.is_empty() { "ruta".into() } else { s }
 }
 
+/// Nombre del botón del ratón en el idioma actual.
+fn boton(b: &Button) -> String {
+    match b {
+        Button::Left => tr("izquierdo").into(),
+        Button::Right => tr("derecho").into(),
+        Button::Middle => tr("central").into(),
+        other => format!("{other:?}"),
+    }
+}
+
 impl Action {
     pub fn describe(&self) -> String {
         match self {
-            Action::MouseMove { x, y } => format!("Mover ratón a ({x:.0}, {y:.0})"),
+            Action::MouseMove { x, y } => trf(
+                "Mover ratón a ({}, {})",
+                &[&format!("{x:.0}"), &format!("{y:.0}")],
+            ),
             Action::ButtonDown {
                 button,
                 x,
                 y,
                 anchor,
-            } => format!(
-                "Pulsar clic {button:?} en ({x:.0}, {y:.0}){}",
+            } => {
+                let pos = format!("({x:.0}, {y:.0})");
+                let t = trf("Pulsar clic {} en {}", &[&boton(button), &pos]);
                 if anchor.is_some() {
-                    "  [ancla visual]"
+                    format!("{t}  [{}]", tr("ancla visual"))
                 } else {
-                    ""
+                    t
                 }
-            ),
-            Action::ButtonUp { button } => format!("Soltar clic {button:?}"),
-            Action::Wheel { dx, dy } => format!("Rueda ({dx}, {dy})"),
-            Action::KeyDown { key } => format!("Pulsar tecla {key:?}"),
-            Action::KeyUp { key } => format!("Soltar tecla {key:?}"),
-            Action::TypeText { text } => format!("Escribir \"{text}\""),
-            Action::RunCommand { command } => format!("Ejecutar `{command}`"),
-            Action::Wait { ms } => format!("Esperar {ms} ms"),
+            }
+            Action::ButtonUp { button } => trf("Soltar clic {}", &[&boton(button)]),
+            Action::Wheel { dx, dy } => trf("Rueda ({}, {})", &[dx, dy]),
+            Action::KeyDown { key } => trf("Pulsar tecla {}", &[&format!("{key:?}")]),
+            Action::KeyUp { key } => trf("Soltar tecla {}", &[&format!("{key:?}")]),
+            Action::TypeText { text } => trf("Escribir «{}»", &[text]),
+            Action::RunCommand { command } => trf("Ejecutar `{}`", &[command]),
+            Action::Wait { ms } => trf("Esperar {} ms", &[ms]),
         }
     }
 }

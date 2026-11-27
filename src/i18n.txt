@@ -1,0 +1,2447 @@
+# Traducciones de Replica. Formato:
+#   = texto en español (la clave, tal cual aparece en el código)
+#   <código> traducción          (en zh fr pt ru de ja ko it)
+# `\n` = salto de línea. Los `{}` se rellenan en orden: deben quedar los mismos.
+# Los símbolos del principio (× ✔ ▶ ● ■ ⚠) dan el color en el registro: no quitarlos.
+
+= + Ejecutar programa
+en + Run program
+zh + 运行程序
+fr + Lancer un programme
+pt + Executar programa
+ru + Запустить программу
+de + Programm starten
+ja + プログラムを実行
+ko + 프로그램 실행
+it + Esegui programma
+
+= + Enter
+en + Enter
+zh + 回车
+fr + Entrée
+pt + Enter
+ru + Enter
+de + Eingabe
+ja + Enter
+ko + Enter
+it + Invio
+
+= + Escribir texto
+en + Type text
+zh + 输入文本
+fr + Saisir du texte
+pt + Digitar texto
+ru + Ввести текст
+de + Text eingeben
+ja + テキスト入力
+ko + 텍스트 입력
+it + Scrivi testo
+
+= + Esperar
+en + Wait
+zh + 等待
+fr + Attendre
+pt + Esperar
+ru + Ждать
+de + Warten
+ja + 待機
+ko + 대기
+it + Attendi
+
+= ATAJO DE LA RUTA
+en ROUTE HOTKEY
+zh 路线快捷键
+fr RACCOURCI DE LA ROUTE
+pt ATALHO DA ROTA
+ru ГОРЯЧАЯ КЛАВИША МАРШРУТА
+de TASTENKÜRZEL DER ROUTE
+ja ルートのショートカット
+ko 경로 단축키
+it SCORCIATOIA DEL PERCORSO
+
+= Abrir y editar rutas
+en Open and edit routes
+zh 打开并编辑路线
+fr Ouvrir et modifier des routes
+pt Abrir e editar rotas
+ru Открыть и изменить маршруты
+de Routen öffnen und bearbeiten
+ja ルートを開いて編集
+ko 경로 열기 및 편집
+it Apri e modifica percorsi
+
+= Acerca de
+en About
+zh 关于
+fr À propos
+pt Sobre
+ru О программе
+de Über
+ja バージョン情報
+ko 정보
+it Informazioni
+
+= Actualizar lista
+en Refresh list
+zh 刷新列表
+fr Actualiser la liste
+pt Atualizar lista
+ru Обновить список
+de Liste aktualisieren
+ja 一覧を更新
+ko 목록 새로고침
+it Aggiorna elenco
+
+= Ajustes
+en Settings
+zh 设置
+fr Réglages
+pt Configurações
+ru Настройки
+de Einstellungen
+ja 設定
+ko 설정
+it Impostazioni
+
+= Ajustes de la ruta
+en Route settings
+zh 路线设置
+fr Réglages de la route
+pt Configurações da rota
+ru Настройки маршрута
+de Routeneinstellungen
+ja ルートの設定
+ko 경로 설정
+it Impostazioni del percorso
+
+= Ajustes por ruta, paso a paso, deshacer y anclas visuales.
+en Per-route settings, step by step, undo and visual anchors.
+zh 每条路线独立设置、单步执行、撤销和视觉锚点。
+fr Réglages par route, pas à pas, annulation et ancres visuelles.
+pt Configurações por rota, passo a passo, desfazer e âncoras visuais.
+ru Настройки для каждого маршрута, пошаговый режим, отмена и визуальные якоря.
+de Einstellungen pro Route, Schritt für Schritt, Rückgängig und visuelle Anker.
+ja ルートごとの設定、ステップ実行、元に戻す、ビジュアルアンカー。
+ko 경로별 설정, 단계 실행, 실행 취소, 시각 앵커.
+it Impostazioni per percorso, passo passo, annulla e ancore visive.
+
+= Al cerrar la ventana, seguir en la bandeja
+en When closing the window, keep running in the tray
+zh 关闭窗口时保留在系统托盘
+fr À la fermeture de la fenêtre, rester dans la zone de notification
+pt Ao fechar a janela, continuar na bandeja
+ru При закрытии окна оставаться в трее
+de Beim Schließen des Fensters im Infobereich weiterlaufen
+ja ウィンドウを閉じてもトレイで動作し続ける
+ko 창을 닫아도 트레이에서 계속 실행
+it Alla chiusura della finestra, resta nell'area di notifica
+
+= Ancla desplazada: {} → {} [{}]
+en Anchor moved: {} → {} [{}]
+zh 锚点已移动：{} → {} [{}]
+fr Ancre déplacée : {} → {} [{}]
+pt Âncora deslocada: {} → {} [{}]
+ru Якорь смещён: {} → {} [{}]
+de Anker verschoben: {} → {} [{}]
+ja アンカーが移動: {} → {} [{}]
+ko 앵커 이동: {} → {} [{}]
+it Ancora spostata: {} → {} [{}]
+
+= Ancla {} no apareció en pantalla (mejor {})
+en Anchor {} did not appear on screen (best {})
+zh 锚点 {} 未出现在屏幕上（最佳匹配 {}）
+fr L'ancre {} n'est pas apparue à l'écran (meilleur {})
+pt A âncora {} não apareceu na tela (melhor {})
+ru Якорь {} не появился на экране (лучшее {})
+de Anker {} ist nicht auf dem Bildschirm erschienen (bester Wert {})
+ja アンカー {} が画面に現れませんでした（最良 {}）
+ko 앵커 {}이(가) 화면에 나타나지 않았습니다 (최고 {})
+it L'ancora {} non è apparsa sullo schermo (migliore {})
+
+= Apariencia
+en Appearance
+zh 外观
+fr Apparence
+pt Aparência
+ru Оформление
+de Darstellung
+ja 外観
+ko 모양
+it Aspetto
+
+= Apariencia y comportamiento de la ventana.
+en Window appearance and behavior.
+zh 窗口外观和行为。
+fr Apparence et comportement de la fenêtre.
+pt Aparência e comportamento da janela.
+ru Оформление и поведение окна.
+de Darstellung und Verhalten des Fensters.
+ja ウィンドウの外観と動作。
+ko 창의 모양과 동작.
+it Aspetto e comportamento della finestra.
+
+= Así los atajos F1–F8 y el programador siguen funcionando. Para salir del todo: clic derecho en el icono → Salir.
+en This keeps the F1–F8 hotkeys and the scheduler working. To quit completely: right-click the icon → Quit.
+zh 这样 F1–F8 快捷键和计划任务会继续工作。要完全退出：右键单击图标 → 退出。
+fr Ainsi, les raccourcis F1–F8 et le planificateur continuent de fonctionner. Pour quitter complètement : clic droit sur l'icône → Quitter.
+pt Assim os atalhos F1–F8 e o agendador continuam funcionando. Para sair de vez: clique direito no ícone → Sair.
+ru Так горячие клавиши F1–F8 и планировщик продолжат работать. Чтобы полностью выйти: правый щелчок по значку → Выход.
+de So funktionieren die Tastenkürzel F1–F8 und der Planer weiter. Zum vollständigen Beenden: Rechtsklick auf das Symbol → Beenden.
+ja これで F1–F8 のショートカットとスケジューラーが動作し続けます。完全に終了するには、アイコンを右クリック → 終了。
+ko 이렇게 하면 F1–F8 단축키와 예약 실행이 계속 작동합니다. 완전히 종료하려면 아이콘을 오른쪽 클릭 → 종료.
+it Così le scorciatoie F1–F8 e il pianificatore continuano a funzionare. Per uscire del tutto: clic destro sull'icona → Esci.
+
+= Atajos
+en Hotkeys
+zh 快捷键
+fr Raccourcis
+pt Atalhos
+ru Горячие клавиши
+de Tastenkürzel
+ja ショートカット
+ko 단축키
+it Scorciatoie
+
+= Añadir
+en Add
+zh 添加
+fr Ajouter
+pt Adicionar
+ru Добавить
+de Hinzufügen
+ja 追加
+ko 추가
+it Aggiungi
+
+= Aún no hay rutas. Pulsa F9 en el juego para grabar la primera.
+en No routes yet. Press F9 in the game to record the first one.
+zh 还没有路线。在游戏中按 F9 录制第一条。
+fr Aucune route pour l'instant. Appuyez sur F9 dans le jeu pour enregistrer la première.
+pt Ainda não há rotas. Pressione F9 no jogo para gravar a primeira.
+ru Маршрутов пока нет. Нажмите F9 в игре, чтобы записать первый.
+de Noch keine Routen. Drücke im Spiel F9, um die erste aufzunehmen.
+ja まだルートがありません。ゲーム中に F9 を押して最初のルートを記録してください。
+ko 아직 경로가 없습니다. 게임에서 F9를 눌러 첫 경로를 녹화하세요.
+it Ancora nessun percorso. Premi F9 nel gioco per registrare il primo.
+
+= Bandeja del sistema
+en System tray
+zh 系统托盘
+fr Zone de notification
+pt Bandeja do sistema
+ru Системный трей
+de Infobereich
+ja システムトレイ
+ko 시스템 트레이
+it Area di notifica
+
+= Borrar paso
+en Delete step
+zh 删除步骤
+fr Supprimer l'étape
+pt Excluir passo
+ru Удалить шаг
+de Schritt löschen
+ja ステップを削除
+ko 단계 삭제
+it Elimina passo
+
+= CLIC
+en CLICK
+zh 点击
+fr CLIC
+pt CLIQUE
+ru КЛИК
+de KLICK
+ja クリック
+ko 클릭
+it CLIC
+
+= Cada X minutos
+en Every X minutes
+zh 每隔 X 分钟
+fr Toutes les X minutes
+pt A cada X minutos
+ru Каждые X минут
+de Alle X Minuten
+ja X 分ごと
+ko X분마다
+it Ogni X minuti
+
+= Cada día a una hora
+en Every day at a time
+zh 每天定时
+fr Chaque jour à une heure
+pt Todo dia em um horário
+ru Каждый день в заданное время
+de Täglich zu einer Uhrzeit
+ja 毎日決まった時刻
+ko 매일 정해진 시간
+it Ogni giorno a un'ora
+
+= Cambios sin guardar
+en Unsaved changes
+zh 未保存的更改
+fr Modifications non enregistrées
+pt Alterações não salvas
+ru Несохранённые изменения
+de Ungespeicherte Änderungen
+ja 未保存の変更
+ko 저장하지 않은 변경 사항
+it Modifiche non salvate
+
+= Cancelar
+en Cancel
+zh 取消
+fr Annuler
+pt Cancelar
+ru Отмена
+de Abbrechen
+ja キャンセル
+ko 취소
+it Annulla
+
+= Captura de pantalla falló ({})
+en Screen capture failed ({})
+zh 截屏失败（{}）
+fr La capture d'écran a échoué ({})
+pt A captura de tela falhou ({})
+ru Не удалось сделать снимок экрана ({})
+de Bildschirmaufnahme fehlgeschlagen ({})
+ja 画面キャプチャに失敗しました（{}）
+ko 화면 캡처 실패 ({})
+it Cattura dello schermo non riuscita ({})
+
+= Carácter no soportado al escribir: {}
+en Unsupported character when typing: {}
+zh 输入时不支持的字符：{}
+fr Caractère non pris en charge lors de la saisie : {}
+pt Caractere não suportado ao digitar: {}
+ru Неподдерживаемый символ при вводе: {}
+de Nicht unterstütztes Zeichen beim Tippen: {}
+ja 入力できない文字: {}
+ko 입력할 수 없는 문자: {}
+it Carattere non supportato durante la scrittura: {}
+
+= Chino, japonés y coreano usan la fuente que ya trae el sistema.
+en Chinese, Japanese and Korean use the font that comes with your system.
+zh 中文、日文和韩文使用系统自带的字体。
+fr Le chinois, le japonais et le coréen utilisent la police fournie avec le système.
+pt Chinês, japonês e coreano usam a fonte que já vem com o sistema.
+ru Китайский, японский и корейский используют шрифт, установленный в системе.
+de Chinesisch, Japanisch und Koreanisch verwenden die Schrift des Systems.
+ja 中国語・日本語・韓国語はシステムに入っているフォントを使います。
+ko 중국어, 일본어, 한국어는 시스템에 설치된 글꼴을 사용합니다.
+it Cinese, giapponese e coreano usano il font già presente nel sistema.
+
+= Clic sin ancla visual: {}
+en Click without a visual anchor: {}
+zh 点击没有视觉锚点：{}
+fr Clic sans ancre visuelle : {}
+pt Clique sem âncora visual: {}
+ru Клик без визуального якоря: {}
+de Klick ohne visuellen Anker: {}
+ja ビジュアルアンカーなしのクリック: {}
+ko 시각 앵커 없는 클릭: {}
+it Clic senza ancora visiva: {}
+
+= Corte de emergencia
+en Emergency stop
+zh 紧急停止
+fr Arrêt d'urgence
+pt Parada de emergência
+ru Аварийная остановка
+de Not-Aus
+ja 緊急停止
+ko 긴급 정지
+it Arresto di emergenza
+
+= Cuándo
+en When
+zh 时间
+fr Quand
+pt Quando
+ru Когда
+de Wann
+ja タイミング
+ko 언제
+it Quando
+
+= Descartar cambios
+en Discard changes
+zh 放弃更改
+fr Abandonner les modifications
+pt Descartar alterações
+ru Отменить изменения
+de Änderungen verwerfen
+ja 変更を破棄
+ko 변경 사항 버리기
+it Scarta modifiche
+
+= Deshacer
+en Undo
+zh 撤销
+fr Annuler
+pt Desfazer
+ru Отменить
+de Rückgängig
+ja 元に戻す
+ko 실행 취소
+it Annulla
+
+= Deshacer / guardar en el editor
+en Undo / save in the editor
+zh 在编辑器中撤销 / 保存
+fr Annuler / enregistrer dans l'éditeur
+pt Desfazer / salvar no editor
+ru Отменить / сохранить в редакторе
+de Rückgängig / Speichern im Editor
+ja エディターで元に戻す / 保存
+ko 편집기에서 실행 취소 / 저장
+it Annulla / salva nell'editor
+
+= Deshecho el último cambio.
+en Last change undone.
+zh 已撤销上一次更改。
+fr Dernière modification annulée.
+pt Última alteração desfeita.
+ru Последнее изменение отменено.
+de Letzte Änderung rückgängig gemacht.
+ja 最後の変更を元に戻しました。
+ko 마지막 변경을 취소했습니다.
+it Ultima modifica annullata.
+
+= Detenido por el usuario.
+en Stopped by the user.
+zh 已被用户停止。
+fr Arrêté par l'utilisateur.
+pt Interrompido pelo usuário.
+ru Остановлено пользователем.
+de Vom Benutzer angehalten.
+ja ユーザーが停止しました。
+ko 사용자가 중지했습니다.
+it Interrotto dall'utente.
+
+= ESPERA
+en WAIT
+zh 等待
+fr ATTENTE
+pt ESPERA
+ru ПАУЗА
+de WARTEN
+ja 待機
+ko 대기
+it ATTESA
+
+= EXEC
+en EXEC
+zh 运行
+fr EXEC
+pt EXEC
+ru ЗАПУСК
+de START
+ja 実行
+ko 실행
+it ESEGUI
+
+= Ejecuta solo el paso {} y avanza al siguiente (para depurar)
+en Runs only step {} and moves to the next one (for debugging)
+zh 只执行第 {} 步并跳到下一步（用于调试）
+fr Exécute uniquement l'étape {} et passe à la suivante (pour déboguer)
+pt Executa só o passo {} e avança para o próximo (para depurar)
+ru Выполняет только шаг {} и переходит к следующему (для отладки)
+de Führt nur Schritt {} aus und springt zum nächsten (zum Debuggen)
+ja ステップ {} だけを実行して次へ進みます（デバッグ用）
+ko {}단계만 실행하고 다음 단계로 이동합니다 (디버깅용)
+it Esegue solo il passo {} e passa al successivo (per il debug)
+
+= Ejecutando: {}
+en Running: {}
+zh 正在运行：{}
+fr Exécution : {}
+pt Executando: {}
+ru Запуск: {}
+de Wird ausgeführt: {}
+ja 実行中: {}
+ko 실행 중: {}
+it In esecuzione: {}
+
+= Ejecutando…
+en Running…
+zh 正在执行…
+fr Exécution…
+pt Executando…
+ru Выполнение…
+de Wird ausgeführt…
+ja 実行中…
+ko 실행 중…
+it In esecuzione…
+
+= Ejecutar `{}`
+en Run `{}`
+zh 运行 `{}`
+fr Exécuter `{}`
+pt Executar `{}`
+ru Запустить `{}`
+de `{}` ausführen
+ja `{}` を実行
+ko `{}` 실행
+it Esegui `{}`
+
+= Ejecutar paso
+en Run step
+zh 执行一步
+fr Exécuter l'étape
+pt Executar passo
+ru Выполнить шаг
+de Schritt ausführen
+ja ステップ実行
+ko 단계 실행
+it Esegui passo
+
+= Empezar / terminar la grabación
+en Start / stop recording
+zh 开始 / 结束录制
+fr Démarrer / arrêter l'enregistrement
+pt Iniciar / terminar a gravação
+ru Начать / закончить запись
+de Aufnahme starten / beenden
+ja 記録の開始 / 終了
+ko 녹화 시작 / 종료
+it Avvia / termina la registrazione
+
+= Empieza a grabar. Mejor con F9 desde el juego: así no se graba el clic en Replica
+en Starts recording. Better with F9 from the game: that way the click on Replica isn't recorded
+zh 开始录制。最好在游戏中按 F9：这样不会录下点击 Replica 的操作
+fr Démarre l'enregistrement. Mieux avec F9 depuis le jeu : ainsi le clic sur Replica n'est pas enregistré
+pt Começa a gravar. Melhor com F9 dentro do jogo: assim o clique no Replica não é gravado
+ru Начинает запись. Лучше нажать F9 в игре: так щелчок по Replica не попадёт в запись
+de Startet die Aufnahme. Besser mit F9 im Spiel: dann wird der Klick auf Replica nicht aufgenommen
+ja 記録を開始します。ゲーム中に F9 を押す方がおすすめです（Replica のクリックが記録されません）
+ko 녹화를 시작합니다. 게임에서 F9를 누르는 것이 좋습니다: Replica를 클릭한 동작이 녹화되지 않습니다
+it Avvia la registrazione. Meglio con F9 dal gioco: così il clic su Replica non viene registrato
+
+= Empieza en {}…
+en Starting in {}…
+zh {} 秒后开始…
+fr Début dans {}…
+pt Começa em {}…
+ru Старт через {}…
+de Start in {}…
+ja {} 秒後に開始…
+ko {}초 후 시작…
+it Inizio tra {}…
+
+= En pausa
+en Paused
+zh 已暂停
+fr En pause
+pt Em pausa
+ru Пауза
+de Pausiert
+ja 一時停止中
+ko 일시 정지됨
+it In pausa
+
+= En pausa (F11 para seguir).
+en Paused (F11 to resume).
+zh 已暂停（按 F11 继续）。
+fr En pause (F11 pour reprendre).
+pt Em pausa (F11 para continuar).
+ru Пауза (F11 — продолжить).
+de Pausiert (F11 zum Fortsetzen).
+ja 一時停止中（F11 で再開）。
+ko 일시 정지됨 (F11로 계속).
+it In pausa (F11 per riprendere).
+
+= Entrada global activa
+en Global input active
+zh 全局输入已启用
+fr Saisie globale active
+pt Entrada global ativa
+ru Глобальный ввод активен
+de Globale Eingabe aktiv
+ja グローバル入力が有効
+ko 전역 입력 활성화됨
+it Input globale attivo
+
+= Escribir «{}»
+en Type “{}”
+zh 输入“{}”
+fr Saisir « {} »
+pt Digitar “{}”
+ru Ввести «{}»
+de „{}“ tippen
+ja 「{}」を入力
+ko “{}” 입력
+it Scrivi «{}»
+
+= Esperar {} ms
+en Wait {} ms
+zh 等待 {} 毫秒
+fr Attendre {} ms
+pt Esperar {} ms
+ru Ждать {} мс
+de {} ms warten
+ja {} ミリ秒待機
+ko {}ms 대기
+it Attendi {} ms
+
+= Esta ruta ejecuta programas: pulsa «permitir» antes.
+en This route runs programs: press “Allow” first.
+zh 此路线会运行程序：请先点击“允许”。
+fr Cette route lance des programmes : appuyez d'abord sur « Autoriser ».
+pt Esta rota executa programas: pressione “Permitir” antes.
+ru Этот маршрут запускает программы: сначала нажмите «Разрешить».
+de Diese Route startet Programme: zuerst „Erlauben“ drücken.
+ja このルートはプログラムを実行します。先に「許可」を押してください。
+ko 이 경로는 프로그램을 실행합니다: 먼저 “허용”을 누르세요.
+it Questo percorso esegue programmi: premi prima «Consenti».
+
+= Esta ruta ejecuta programas: {}. Revísalos y pulsa «permitir» antes de reproducir.
+en This route runs programs: {}. Review them and press “Allow” before playing.
+zh 此路线会运行程序：{}。请检查后点击“允许”再播放。
+fr Cette route lance des programmes : {}. Vérifiez-les et appuyez sur « Autoriser » avant de lire.
+pt Esta rota executa programas: {}. Revise-os e pressione “Permitir” antes de reproduzir.
+ru Этот маршрут запускает программы: {}. Проверьте их и нажмите «Разрешить» перед воспроизведением.
+de Diese Route startet Programme: {}. Prüfe sie und drücke „Erlauben“, bevor du abspielst.
+ja このルートはプログラムを実行します: {}。確認してから「許可」を押して再生してください。
+ko 이 경로는 프로그램을 실행합니다: {}. 확인한 뒤 “허용”을 누르고 재생하세요.
+it Questo percorso esegue programmi: {}. Controllali e premi «Consenti» prima di riprodurre.
+
+= F9 grabar · F10 reproducir · F11 pausa · F12 parar · F1–F8 atajos de ruta
+en F9 record · F10 play · F11 pause · F12 stop · F1–F8 route hotkeys
+zh F9 录制 · F10 播放 · F11 暂停 · F12 停止 · F1–F8 路线快捷键
+fr F9 enregistrer · F10 lire · F11 pause · F12 arrêter · F1–F8 raccourcis de route
+pt F9 gravar · F10 reproduzir · F11 pausa · F12 parar · F1–F8 atalhos de rota
+ru F9 запись · F10 воспроизведение · F11 пауза · F12 стоп · F1–F8 клавиши маршрутов
+de F9 Aufnahme · F10 Abspielen · F11 Pause · F12 Stopp · F1–F8 Routen-Kürzel
+ja F9 記録 · F10 再生 · F11 一時停止 · F12 停止 · F1–F8 ルートのショートカット
+ko F9 녹화 · F10 재생 · F11 일시 정지 · F12 정지 · F1–F8 경로 단축키
+it F9 registra · F10 riproduci · F11 pausa · F12 ferma · F1–F8 scorciatoie dei percorsi
+
+= Graba lo que haces y lo\nrepite por ti, mirando la pantalla
+en Records what you do and\nrepeats it for you, watching the screen
+zh 录下你的操作，\n看着屏幕替你重复
+fr Enregistre ce que vous faites\net le refait pour vous en regardant l'écran
+pt Grava o que você faz e\nrepete por você, olhando a tela
+ru Записывает ваши действия\nи повторяет их, глядя на экран
+de Nimmt auf, was du tust, und\nwiederholt es mit Blick auf den Bildschirm
+ja あなたの操作を記録し、\n画面を見ながら代わりに繰り返します
+ko 당신의 동작을 녹화하고\n화면을 보며 대신 반복합니다
+it Registra ciò che fai e\nlo ripete per te, guardando lo schermo
+
+= Graba una vez lo que haces con ratón y teclado; Replica lo repite mirando la pantalla.
+en Record once what you do with mouse and keyboard; Replica repeats it while watching the screen.
+zh 用鼠标和键盘操作一次并录下来；Replica 会看着屏幕替你重复。
+fr Enregistrez une fois ce que vous faites à la souris et au clavier ; Replica le refait en regardant l'écran.
+pt Grave uma vez o que você faz com mouse e teclado; o Replica repete olhando a tela.
+ru Запишите один раз свои действия мышью и клавиатурой — Replica повторит их, глядя на экран.
+de Nimm einmal auf, was du mit Maus und Tastatur tust; Replica wiederholt es mit Blick auf den Bildschirm.
+ja マウスとキーボードの操作を一度記録すれば、Replica が画面を見ながら繰り返します。
+ko 마우스와 키보드로 하는 일을 한 번 녹화하면 Replica가 화면을 보며 반복합니다.
+it Registra una volta ciò che fai con mouse e tastiera; Replica lo ripete guardando lo schermo.
+
+= Grabación vacía: no se guarda nada.
+en Empty recording: nothing saved.
+zh 录制为空：未保存任何内容。
+fr Enregistrement vide : rien n'est sauvegardé.
+pt Gravação vazia: nada foi salvo.
+ru Пустая запись: ничего не сохранено.
+de Leere Aufnahme: nichts gespeichert.
+ja 記録が空です。何も保存しません。
+ko 녹화가 비어 있습니다: 저장하지 않습니다.
+it Registrazione vuota: non viene salvato nulla.
+
+= Grabando… {} pasos
+en Recording… {} steps
+zh 正在录制… {} 步
+fr Enregistrement… {} étapes
+pt Gravando… {} passos
+ru Запись… шагов: {}
+de Aufnahme… {} Schritte
+ja 記録中… {} ステップ
+ko 녹화 중… {}단계
+it Registrazione… {} passi
+
+= Grabar
+en Record
+zh 录制
+fr Enregistrer
+pt Gravar
+ru Запись
+de Aufnehmen
+ja 記録
+ko 녹화
+it Registra
+
+= Grabar movimientos del ratón
+en Record mouse movements
+zh 录制鼠标移动
+fr Enregistrer les mouvements de la souris
+pt Gravar movimentos do mouse
+ru Записывать движения мыши
+de Mausbewegungen aufnehmen
+ja マウスの動きを記録
+ko 마우스 이동 녹화
+it Registra i movimenti del mouse
+
+= Grabar una ruta
+en Record a route
+zh 录制路线
+fr Enregistrer une route
+pt Gravar uma rota
+ru Записать маршрут
+de Route aufnehmen
+ja ルートを記録
+ko 경로 녹화
+it Registra un percorso
+
+= Grabar, editar y reproducir rutas
+en Record, edit and play routes
+zh 录制、编辑和播放路线
+fr Enregistrer, modifier et lire des routes
+pt Gravar, editar e reproduzir rotas
+ru Запись, правка и воспроизведение маршрутов
+de Routen aufnehmen, bearbeiten und abspielen
+ja ルートの記録・編集・再生
+ko 경로 녹화, 편집 및 재생
+it Registra, modifica e riproduci percorsi
+
+= Guardando la grabación…
+en Saving the recording…
+zh 正在保存录制…
+fr Sauvegarde de l'enregistrement…
+pt Salvando a gravação…
+ru Сохранение записи…
+de Aufnahme wird gespeichert…
+ja 記録を保存中…
+ko 녹화 저장 중…
+it Salvataggio della registrazione…
+
+= Guardar
+en Save
+zh 保存
+fr Enregistrer
+pt Salvar
+ru Сохранить
+de Speichern
+ja 保存
+ko 저장
+it Salva
+
+= Humanizar tiempos y posición
+en Humanize timing and position
+zh 随机化时间和位置（更像真人）
+fr Humaniser les délais et la position
+pt Humanizar tempos e posição
+ru Очеловечить задержки и позицию
+de Zeiten und Position menschlicher machen
+ja タイミングと位置を人間らしくする
+ko 타이밍과 위치를 사람처럼
+it Umanizza tempi e posizione
+
+= Idioma
+en Language
+zh 语言
+fr Langue
+pt Idioma
+ru Язык
+de Sprache
+ja 言語
+ko 언어
+it Lingua
+
+= Inicio
+en Home
+zh 首页
+fr Accueil
+pt Início
+ru Главная
+de Start
+ja ホーム
+ko 홈
+it Home
+
+= La bandeja del sistema solo está disponible en Windows.
+en The system tray is only available on Windows.
+zh 系统托盘仅在 Windows 上可用。
+fr La zone de notification n'est disponible que sous Windows.
+pt A bandeja do sistema só está disponível no Windows.
+ru Системный трей доступен только в Windows.
+de Der Infobereich ist nur unter Windows verfügbar.
+ja システムトレイは Windows でのみ使えます。
+ko 시스템 트레이는 Windows에서만 사용할 수 있습니다.
+it L'area di notifica è disponibile solo su Windows.
+
+= La ruta está vacía: graba o carga una.
+en The route is empty: record or load one.
+zh 路线为空：请录制或加载一条。
+fr La route est vide : enregistrez-en une ou chargez-en une.
+pt A rota está vazia: grave ou carregue uma.
+ru Маршрут пуст: запишите или загрузите маршрут.
+de Die Route ist leer: nimm eine auf oder lade eine.
+ja ルートが空です。記録するか読み込んでください。
+ko 경로가 비어 있습니다: 녹화하거나 불러오세요.
+it Il percorso è vuoto: registrane o caricane uno.
+
+= La ruta «{}» tiene cambios. ¿Qué hago antes de {}?
+en The route “{}” has changes. What should I do before {}?
+zh 路线“{}”有更改。在{}之前要怎么处理？
+fr La route « {} » a des modifications. Que faire avant de {} ?
+pt A rota “{}” tem alterações. O que faço antes de {}?
+ru В маршруте «{}» есть изменения. Что сделать, прежде чем {}?
+de Die Route „{}“ hat Änderungen. Was soll vor dem {} passieren?
+ja ルート「{}」に変更があります。{}前にどうしますか？
+ko 경로 “{}”에 변경 사항이 있습니다. {} 전에 어떻게 할까요?
+it Il percorso «{}» ha modifiche. Cosa faccio prima di {}?
+
+= Lanza rutas solas a una hora o cada X minutos. Replica tiene que estar abierta (o en la bandeja).
+en Runs routes on their own at a set time or every X minutes. Replica must be open (or in the tray).
+zh 在设定时间或每隔 X 分钟自动运行路线。Replica 需要保持打开（或在托盘中）。
+fr Lance des routes toutes seules à une heure donnée ou toutes les X minutes. Replica doit être ouvert (ou dans la zone de notification).
+pt Executa rotas sozinho em um horário ou a cada X minutos. O Replica precisa estar aberto (ou na bandeja).
+ru Запускает маршруты сам в заданное время или каждые X минут. Replica должна быть открыта (или в трее).
+de Startet Routen selbstständig zu einer Uhrzeit oder alle X Minuten. Replica muss geöffnet sein (oder im Infobereich).
+ja 決まった時刻または X 分ごとにルートを自動実行します。Replica を開いておく（またはトレイに置く）必要があります。
+ko 정해진 시간이나 X분마다 경로를 자동으로 실행합니다. Replica가 열려 있어야 합니다 (또는 트레이에).
+it Avvia i percorsi da solo a un'ora stabilita o ogni X minuti. Replica deve essere aperto (o nell'area di notifica).
+
+= Lanza una ruta cada día a una hora o cada X minutos.
+en Run a route every day at a set time or every X minutes.
+zh 每天定时或每隔 X 分钟运行一条路线。
+fr Lancez une route chaque jour à une heure donnée ou toutes les X minutes.
+pt Execute uma rota todo dia em um horário ou a cada X minutos.
+ru Запускайте маршрут каждый день в заданное время или каждые X минут.
+de Starte eine Route täglich zu einer Uhrzeit oder alle X Minuten.
+ja 毎日決まった時刻、または X 分ごとにルートを実行します。
+ko 매일 정해진 시간이나 X분마다 경로를 실행합니다.
+it Avvia un percorso ogni giorno a un'ora stabilita o ogni X minuti.
+
+= Lanzar la ruta que tenga ese atajo (Rutas → Ajustes de la ruta)
+en Run the route assigned to that hotkey (Routes → Route settings)
+zh 运行设置了该快捷键的路线（路线 → 路线设置）
+fr Lancer la route associée à ce raccourci (Routes → Réglages de la route)
+pt Executar a rota que tiver esse atalho (Rotas → Configurações da rota)
+ru Запустить маршрут с этой клавишей (Маршруты → Настройки маршрута)
+de Die Route mit diesem Kürzel starten (Routen → Routeneinstellungen)
+ja そのショートカットのルートを実行（ルート → ルートの設定）
+ko 해당 단축키가 지정된 경로 실행 (경로 → 경로 설정)
+it Avvia il percorso con quella scorciatoia (Percorsi → Impostazioni del percorso)
+
+= Lanzar rutas a una hora o cada X minutos
+en Run routes at a set time or every X minutes
+zh 定时或每隔 X 分钟运行路线
+fr Lancer des routes à une heure donnée ou toutes les X minutes
+pt Executar rotas em um horário ou a cada X minutos
+ru Запуск маршрутов по времени или каждые X минут
+de Routen zu einer Uhrzeit oder alle X Minuten starten
+ja 決まった時刻または X 分ごとにルートを実行
+ko 정해진 시간이나 X분마다 경로 실행
+it Avvia percorsi a un'ora stabilita o ogni X minuti
+
+= Limpio
+en Clean
+zh 明亮
+fr Clair
+pt Limpo
+ru Светлая
+de Hell
+ja クリーン
+ko 깔끔
+it Chiaro
+
+= Listo para grabar
+en Ready to record
+zh 准备录制
+fr Prêt à enregistrer
+pt Pronto para gravar
+ru Готово к записи
+de Bereit zur Aufnahme
+ja 記録の準備完了
+ko 녹화 준비 완료
+it Pronto a registrare
+
+= Listo · {}
+en Ready · {}
+zh 就绪 · {}
+fr Prêt · {}
+pt Pronto · {}
+ru Готово · {}
+de Bereit · {}
+ja 準備完了 · {}
+ko 준비됨 · {}
+it Pronto · {}
+
+= Lo que Replica buscará en pantalla
+en What Replica will look for on screen
+zh Replica 将在屏幕上寻找的内容
+fr Ce que Replica cherchera à l'écran
+pt O que o Replica vai procurar na tela
+ru Что Replica будет искать на экране
+de Wonach Replica auf dem Bildschirm sucht
+ja Replica が画面で探すもの
+ko Replica가 화면에서 찾을 내용
+it Ciò che Replica cercherà sullo schermo
+
+= Los datos (rutas y replica.json) se guardan junto al ejecutable: es portable.
+en Data (routes and replica.json) is stored next to the executable: it's portable.
+zh 数据（路线和 replica.json）保存在可执行文件旁边：可便携使用。
+fr Les données (routes et replica.json) sont stockées à côté de l'exécutable : il est portable.
+pt Os dados (rotas e replica.json) ficam junto ao executável: é portátil.
+ru Данные (маршруты и replica.json) хранятся рядом с исполняемым файлом: программа портативная.
+de Die Daten (Routen und replica.json) liegen neben der ausführbaren Datei: portabel.
+ja データ（ルートと replica.json）は実行ファイルの隣に保存されます。ポータブルです。
+ko 데이터(경로와 replica.json)는 실행 파일 옆에 저장됩니다: 포터블입니다.
+it I dati (percorsi e replica.json) sono salvati accanto all'eseguibile: è portatile.
+
+= MOV
+en MOVE
+zh 移动
+fr MOUV
+pt MOV
+ru ДВИЖ
+de BEW
+ja 移動
+ko 이동
+it MOV
+
+= Mando
+en Command
+zh 指挥
+fr Commande
+pt Comando
+ru Командная
+de Kommando
+ja コマンド
+ko 지휘
+it Comando
+
+= Marcar como siguiente paso de «Ejecutar paso»
+en Mark as the next step for “Run step”
+zh 设为“执行一步”的下一步
+fr Marquer comme prochaine étape de « Exécuter l'étape »
+pt Marcar como próximo passo de “Executar passo”
+ru Сделать следующим шагом для «Выполнить шаг»
+de Als nächsten Schritt für „Schritt ausführen“ markieren
+ja 「ステップ実行」の次のステップにする
+ko “단계 실행”의 다음 단계로 표시
+it Segna come prossimo passo di «Esegui passo»
+
+= Mostrar Replica
+en Show Replica
+zh 显示 Replica
+fr Afficher Replica
+pt Mostrar Replica
+ru Показать Replica
+de Replica anzeigen
+ja Replica を表示
+ko Replica 표시
+it Mostra Replica
+
+= Mover ratón a ({}, {})
+en Move mouse to ({}, {})
+zh 移动鼠标到 ({}, {})
+fr Déplacer la souris vers ({}, {})
+pt Mover o mouse para ({}, {})
+ru Переместить мышь в ({}, {})
+de Maus bewegen nach ({}, {})
+ja マウスを ({}, {}) へ移動
+ko 마우스를 ({}, {})(으)로 이동
+it Sposta il mouse a ({}, {})
+
+= Máscara
+en Mask
+zh 皮肤
+fr Masque
+pt Máscara
+ru Тема
+de Design
+ja マスク
+ko 테마
+it Tema
+
+= Máscara visual, idioma y bandeja del sistema
+en Visual mask, language and system tray
+zh 外观皮肤、语言和系统托盘
+fr Masque visuel, langue et zone de notification
+pt Máscara visual, idioma e bandeja do sistema
+ru Тема оформления, язык и системный трей
+de Design, Sprache und Infobereich
+ja 外観マスク、言語、システムトレイ
+ko 테마, 언어, 시스템 트레이
+it Tema visivo, lingua e area di notifica
+
+= Neutro
+en Neutral
+zh 中性
+fr Neutre
+pt Neutro
+ru Нейтральная
+de Neutral
+ja ニュートラル
+ko 중립
+it Neutro
+
+= Ninguna todavía.
+en None yet.
+zh 暂无。
+fr Aucune pour l'instant.
+pt Nenhuma ainda.
+ru Пока нет.
+de Noch keine.
+ja まだありません。
+ko 아직 없습니다.
+it Nessuna per ora.
+
+= No encuentro la ventana de '{}'. Ruta detenida.
+en Can't find the '{}' window. Route stopped.
+zh 找不到“{}”的窗口。路线已停止。
+fr Fenêtre de '{}' introuvable. Route arrêtée.
+pt Não encontro a janela de '{}'. Rota interrompida.
+ru Не найдено окно «{}». Маршрут остановлен.
+de Fenster von '{}' nicht gefunden. Route angehalten.
+ja 「{}」のウィンドウが見つかりません。ルートを停止しました。
+ko '{}' 창을 찾을 수 없습니다. 경로를 중지했습니다.
+it Non trovo la finestra di '{}'. Percorso interrotto.
+
+= No encuentro la ventana de '{}': uso las coordenadas grabadas.
+en Can't find the '{}' window: using the recorded coordinates.
+zh 找不到“{}”的窗口：使用录制时的坐标。
+fr Fenêtre de '{}' introuvable : j'utilise les coordonnées enregistrées.
+pt Não encontro a janela de '{}': uso as coordenadas gravadas.
+ru Не найдено окно «{}»: использую записанные координаты.
+de Fenster von '{}' nicht gefunden: verwende die aufgenommenen Koordinaten.
+ja 「{}」のウィンドウが見つかりません。記録した座標を使います。
+ko '{}' 창을 찾을 수 없습니다: 녹화된 좌표를 사용합니다.
+it Non trovo la finestra di '{}': uso le coordinate registrate.
+
+= No se puede leer el ancla {}
+en Can't read anchor {}
+zh 无法读取锚点 {}
+fr Impossible de lire l'ancre {}
+pt Não é possível ler a âncora {}
+ru Не удаётся прочитать якорь {}
+de Anker {} kann nicht gelesen werden
+ja アンカー {} を読み込めません
+ko 앵커 {}을(를) 읽을 수 없습니다
+it Impossibile leggere l'ancora {}
+
+= Nombre para la próxima grabación
+en Name for the next recording
+zh 下一次录制的名称
+fr Nom du prochain enregistrement
+pt Nome para a próxima gravação
+ru Имя для следующей записи
+de Name für die nächste Aufnahme
+ja 次の記録の名前
+ko 다음 녹화의 이름
+it Nome per la prossima registrazione
+
+= Nueva programación
+en New schedule
+zh 新建计划
+fr Nouvelle planification
+pt Novo agendamento
+ru Новое расписание
+de Neuer Zeitplan
+ja 新しいスケジュール
+ko 새 예약
+it Nuova pianificazione
+
+= Para la reproducción antes de grabar (F12).
+en Stop playback before recording (F12).
+zh 录制前请先停止播放（F12）。
+fr Arrêtez la lecture avant d'enregistrer (F12).
+pt Pare a reprodução antes de gravar (F12).
+ru Остановите воспроизведение перед записью (F12).
+de Stoppe die Wiedergabe vor der Aufnahme (F12).
+ja 記録する前に再生を止めてください（F12）。
+ko 녹화하기 전에 재생을 멈추세요 (F12).
+it Ferma la riproduzione prima di registrare (F12).
+
+= Parar
+en Stop
+zh 停止
+fr Arrêter
+pt Parar
+ru Стоп
+de Stopp
+ja 停止
+ko 정지
+it Ferma
+
+= Pausa
+en Pause
+zh 暂停
+fr Pause
+pt Pausa
+ru Пауза
+de Pause
+ja 一時停止
+ko 일시 정지
+it Pausa
+
+= Pausar / seguir (suelta las teclas mantenidas)
+en Pause / resume (releases held keys)
+zh 暂停 / 继续（会松开按住的键）
+fr Pause / reprise (relâche les touches maintenues)
+pt Pausar / continuar (solta as teclas pressionadas)
+ru Пауза / продолжить (отпускает зажатые клавиши)
+de Pause / Fortsetzen (lässt gehaltene Tasten los)
+ja 一時停止 / 再開（押したままのキーを離します）
+ko 일시 정지 / 계속 (누르고 있던 키를 뗌)
+it Pausa / riprendi (rilascia i tasti tenuti premuti)
+
+= Permitir
+en Allow
+zh 允许
+fr Autoriser
+pt Permitir
+ru Разрешить
+de Erlauben
+ja 許可
+ko 허용
+it Consenti
+
+= Permítelo solo si confías en quien te pasó la ruta. Se recuerda hasta que cambien los comandos.
+en Only allow it if you trust whoever gave you the route. It's remembered until the commands change.
+zh 只有在信任提供此路线的人时才允许。在命令改变之前会一直记住。
+fr Ne l'autorisez que si vous faites confiance à la personne qui vous a donné la route. C'est mémorisé jusqu'à ce que les commandes changent.
+pt Só permita se você confiar em quem te passou a rota. Fica lembrado até os comandos mudarem.
+ru Разрешайте, только если доверяете тому, кто дал вам маршрут. Решение запоминается, пока не изменятся команды.
+de Nur erlauben, wenn du der Person vertraust, von der die Route stammt. Wird gespeichert, bis sich die Befehle ändern.
+ja ルートをくれた相手を信頼できる場合のみ許可してください。コマンドが変わるまで記憶されます。
+ko 경로를 준 사람을 신뢰할 때만 허용하세요. 명령이 바뀔 때까지 기억됩니다.
+it Consentilo solo se ti fidi di chi ti ha dato il percorso. Viene ricordato finché i comandi non cambiano.
+
+= Programaciones
+en Schedules
+zh 计划列表
+fr Planifications
+pt Agendamentos
+ru Расписания
+de Zeitpläne
+ja スケジュール
+ko 예약 목록
+it Pianificazioni
+
+= Programada '{}' {}.
+en Scheduled '{}' {}.
+zh 已计划“{}”：{}。
+fr '{}' planifiée {}.
+pt '{}' agendada {}.
+ru Маршрут «{}» запланирован: {}.
+de '{}' geplant: {}.
+ja 「{}」をスケジュールしました: {}。
+ko '{}' 예약됨: {}.
+it '{}' pianificato {}.
+
+= Programadas
+en Scheduled
+zh 已计划
+fr Planifiées
+pt Agendadas
+ru Запланировано
+de Geplant
+ja スケジュール済み
+ko 예약됨
+it Pianificate
+
+= Programador
+en Scheduler
+zh 计划任务
+fr Planificateur
+pt Agendador
+ru Планировщик
+de Planer
+ja スケジューラー
+ko 예약 실행
+it Pianificatore
+
+= Programar
+en Schedule
+zh 计划运行
+fr Planifier
+pt Agendar
+ru Запланировать
+de Planen
+ja スケジュール
+ko 예약하기
+it Pianifica
+
+= Programas de la ruta permitidos.
+en Route programs allowed.
+zh 已允许此路线的程序。
+fr Programmes de la route autorisés.
+pt Programas da rota permitidos.
+ru Программы маршрута разрешены.
+de Programme der Route erlaubt.
+ja ルートのプログラムを許可しました。
+ko 경로의 프로그램을 허용했습니다.
+it Programmi del percorso consentiti.
+
+= Pulsa F9 en el juego, haz la tarea una vez y pulsa F9 otra vez.
+en Press F9 in the game, do the task once and press F9 again.
+zh 在游戏中按 F9，完成一次任务，再按一次 F9。
+fr Appuyez sur F9 dans le jeu, faites la tâche une fois et appuyez de nouveau sur F9.
+pt Pressione F9 no jogo, faça a tarefa uma vez e pressione F9 de novo.
+ru Нажмите F9 в игре, выполните задачу один раз и снова нажмите F9.
+de Drücke im Spiel F9, erledige die Aufgabe einmal und drücke erneut F9.
+ja ゲーム中に F9 を押し、作業を一度行って、もう一度 F9 を押します。
+ko 게임에서 F9를 누르고 작업을 한 번 한 뒤 F9를 다시 누르세요.
+it Premi F9 nel gioco, svolgi l'attività una volta e premi di nuovo F9.
+
+= Pulsa F9 en el juego, haz la tarea y pulsa F9 otra vez.
+en Press F9 in the game, do the task and press F9 again.
+zh 在游戏中按 F9，完成任务，再按一次 F9。
+fr Appuyez sur F9 dans le jeu, faites la tâche et appuyez de nouveau sur F9.
+pt Pressione F9 no jogo, faça a tarefa e pressione F9 de novo.
+ru Нажмите F9 в игре, выполните задачу и снова нажмите F9.
+de Drücke im Spiel F9, erledige die Aufgabe und drücke erneut F9.
+ja ゲーム中に F9 を押し、作業をして、もう一度 F9 を押します。
+ko 게임에서 F9를 누르고 작업한 뒤 F9를 다시 누르세요.
+it Premi F9 nel gioco, svolgi l'attività e premi di nuovo F9.
+
+= Pulsa esa tecla en cualquier momento (con Replica en espera) para lanzar esta ruta. Se activa al guardar.
+en Press that key at any time (with Replica idle) to run this route. It takes effect when you save.
+zh 随时按下该键（Replica 空闲时）即可运行此路线。保存后生效。
+fr Appuyez sur cette touche à tout moment (Replica au repos) pour lancer cette route. Prend effet à l'enregistrement.
+pt Pressione essa tecla a qualquer momento (com o Replica em espera) para executar esta rota. Vale depois de salvar.
+ru Нажмите эту клавишу в любой момент (когда Replica в ожидании), чтобы запустить маршрут. Действует после сохранения.
+de Drücke diese Taste jederzeit (wenn Replica bereit ist), um diese Route zu starten. Wirkt nach dem Speichern.
+ja いつでもそのキーを押すと（Replica が待機中のとき）このルートを実行します。保存すると有効になります。
+ko 언제든 그 키를 누르면 (Replica가 대기 중일 때) 이 경로를 실행합니다. 저장하면 적용됩니다.
+it Premi quel tasto in qualsiasi momento (con Replica in attesa) per avviare questo percorso. Si attiva al salvataggio.
+
+= Pulsar clic {} en {}
+en Press {} click at {}
+zh 按下{}键（{}）
+fr Appuyer clic {} en {}
+pt Pressionar clique {} em {}
+ru Нажать {} кнопку в {}
+de {}klick drücken bei {}
+ja {} クリックを押す（{}）
+ko {} 클릭 누르기 ({})
+it Premi clic {} in {}
+
+= Pulsar tecla {}
+en Press key {}
+zh 按下按键 {}
+fr Appuyer sur la touche {}
+pt Pressionar tecla {}
+ru Нажать клавишу {}
+de Taste {} drücken
+ja キー {} を押す
+ko {} 키 누르기
+it Premi il tasto {}
+
+= Quita los movimientos de ratón intermedios
+en Removes intermediate mouse movements
+zh 移除中间的鼠标移动
+fr Supprime les mouvements de souris intermédiaires
+pt Remove os movimentos intermediários do mouse
+ru Убирает промежуточные движения мыши
+de Entfernt zwischenliegende Mausbewegungen
+ja 途中のマウス移動を削除します
+ko 중간 마우스 이동을 제거합니다
+it Rimuove i movimenti intermedi del mouse
+
+= Quitar
+en Remove
+zh 移除
+fr Retirer
+pt Remover
+ru Убрать
+de Entfernen
+ja 削除
+ko 제거
+it Rimuovi
+
+= REPRODUCCIÓN
+en PLAYBACK
+zh 播放
+fr LECTURE
+pt REPRODUÇÃO
+ru ВОСПРОИЗВЕДЕНИЕ
+de WIEDERGABE
+ja 再生
+ko 재생
+it RIPRODUZIONE
+
+= RUEDA
+en WHEEL
+zh 滚轮
+fr MOLETTE
+pt RODA
+ru КОЛЕСО
+de RAD
+ja ホイール
+ko 휠
+it ROTELLA
+
+= Registro
+en Log
+zh 日志
+fr Journal
+pt Registro
+ru Журнал
+de Protokoll
+ja ログ
+ko 기록
+it Registro
+
+= Repite la ruta cargada con sus ajustes (cuenta atrás incluida)
+en Repeats the loaded route with its settings (countdown included)
+zh 按其设置重复已加载的路线（含倒计时）
+fr Répète la route chargée avec ses réglages (compte à rebours inclus)
+pt Repete a rota carregada com suas configurações (contagem regressiva incluída)
+ru Повторяет загруженный маршрут с его настройками (включая обратный отсчёт)
+de Wiederholt die geladene Route mit ihren Einstellungen (inklusive Countdown)
+ja 読み込んだルートをその設定で繰り返します（カウントダウンを含む）
+ko 불러온 경로를 설정대로 반복합니다 (카운트다운 포함)
+it Ripete il percorso caricato con le sue impostazioni (conto alla rovescia incluso)
+
+= Replica en línea. F9 grabar · F10 reproducir · F11 pausa · F12 parar.
+en Replica online. F9 record · F10 play · F11 pause · F12 stop.
+zh Replica 已就绪。F9 录制 · F10 播放 · F11 暂停 · F12 停止。
+fr Replica en ligne. F9 enregistrer · F10 lire · F11 pause · F12 arrêter.
+pt Replica online. F9 gravar · F10 reproduzir · F11 pausa · F12 parar.
+ru Replica в сети. F9 запись · F10 воспроизведение · F11 пауза · F12 стоп.
+de Replica bereit. F9 Aufnahme · F10 Abspielen · F11 Pause · F12 Stopp.
+ja Replica 起動完了。F9 記録 · F10 再生 · F11 一時停止 · F12 停止。
+ko Replica 실행 중. F9 녹화 · F10 재생 · F11 일시 정지 · F12 정지.
+it Replica attivo. F9 registra · F10 riproduci · F11 pausa · F12 ferma.
+
+= Replica sigue en la bandeja del sistema (atajos y programador activos).
+en Replica keeps running in the system tray (hotkeys and scheduler active).
+zh Replica 仍在系统托盘中运行（快捷键和计划任务保持启用）。
+fr Replica continue dans la zone de notification (raccourcis et planificateur actifs).
+pt O Replica continua na bandeja do sistema (atalhos e agendador ativos).
+ru Replica продолжает работать в трее (горячие клавиши и планировщик активны).
+de Replica läuft im Infobereich weiter (Tastenkürzel und Planer aktiv).
+ja Replica はシステムトレイで動作中です（ショートカットとスケジューラーは有効）。
+ko Replica가 시스템 트레이에서 계속 실행됩니다 (단축키와 예약 실행 활성).
+it Replica resta nell'area di notifica (scorciatoie e pianificatore attivi).
+
+= Reproduciendo · vuelta {}/{}
+en Playing · loop {}/{}
+zh 正在播放 · 第 {}/{} 轮
+fr Lecture · tour {}/{}
+pt Reproduzindo · volta {}/{}
+ru Воспроизведение · круг {}/{}
+de Wiedergabe · Runde {}/{}
+ja 再生中 · ループ {}/{}
+ko 재생 중 · 반복 {}/{}
+it Riproduzione · giro {}/{}
+
+= Reproducir
+en Play
+zh 播放
+fr Lire
+pt Reproduzir
+ru Воспроизвести
+de Abspielen
+ja 再生
+ko 재생
+it Riproduci
+
+= Reproducir / parar la ruta abierta
+en Play / stop the open route
+zh 播放 / 停止已打开的路线
+fr Lire / arrêter la route ouverte
+pt Reproduzir / parar a rota aberta
+ru Воспроизвести / остановить открытый маршрут
+de Geöffnete Route abspielen / stoppen
+ja 開いているルートを再生 / 停止
+ko 열린 경로 재생 / 정지
+it Riproduci / ferma il percorso aperto
+
+= Resumen y accesos rápidos
+en Overview and shortcuts
+zh 概览和快捷入口
+fr Résumé et accès rapides
+pt Resumo e atalhos rápidos
+ru Обзор и быстрый доступ
+de Übersicht und Schnellzugriff
+ja 概要とクイックアクセス
+ko 요약 및 바로 가기
+it Panoramica e accessi rapidi
+
+= Rueda ({}, {})
+en Wheel ({}, {})
+zh 滚轮 ({}, {})
+fr Molette ({}, {})
+pt Roda ({}, {})
+ru Колесо ({}, {})
+de Mausrad ({}, {})
+ja ホイール ({}, {})
+ko 휠 ({}, {})
+it Rotella ({}, {})
+
+= Ruta
+en Route
+zh 路线
+fr Route
+pt Rota
+ru Маршрут
+de Route
+ja ルート
+ko 경로
+it Percorso
+
+= Ruta '{}' cargada.
+en Route '{}' loaded.
+zh 已加载路线“{}”。
+fr Route '{}' chargée.
+pt Rota '{}' carregada.
+ru Маршрут «{}» загружен.
+de Route '{}' geladen.
+ja ルート「{}」を読み込みました。
+ko 경로 '{}'을(를) 불러왔습니다.
+it Percorso '{}' caricato.
+
+= Ruta '{}' guardada.
+en Route '{}' saved.
+zh 已保存路线“{}”。
+fr Route '{}' enregistrée.
+pt Rota '{}' salva.
+ru Маршрут «{}» сохранён.
+de Route '{}' gespeichert.
+ja ルート「{}」を保存しました。
+ko 경로 '{}'을(를) 저장했습니다.
+it Percorso '{}' salvato.
+
+= Ruta abierta
+en Open route
+zh 当前路线
+fr Route ouverte
+pt Rota aberta
+ru Открытый маршрут
+de Geöffnete Route
+ja 開いているルート
+ko 열린 경로
+it Percorso aperto
+
+= Rutas
+en Routes
+zh 路线
+fr Routes
+pt Rotas
+ru Маршруты
+de Routen
+ja ルート
+ko 경로
+it Percorsi
+
+= Salir
+en Quit
+zh 退出
+fr Quitter
+pt Sair
+ru Выход
+de Beenden
+ja 終了
+ko 종료
+it Esci
+
+= Se guardan con la ruta: cada ruta recuerda los suyos.
+en Saved with the route: each route remembers its own.
+zh 随路线一起保存：每条路线都会记住自己的设置。
+fr Enregistrés avec la route : chaque route se souvient des siens.
+pt São salvas com a rota: cada rota lembra as suas.
+ru Сохраняются вместе с маршрутом: каждый маршрут помнит свои.
+de Werden mit der Route gespeichert: Jede Route merkt sich ihre eigenen.
+ja ルートと一緒に保存されます。ルートごとに設定を覚えています。
+ko 경로와 함께 저장됩니다: 경로마다 자신의 설정을 기억합니다.
+it Si salvano con il percorso: ogni percorso ricorda le sue.
+
+= Secuencia
+en Sequence
+zh 步骤序列
+fr Séquence
+pt Sequência
+ru Последовательность
+de Ablauf
+ja シーケンス
+ko 순서
+it Sequenza
+
+= Seguir
+en Resume
+zh 继续
+fr Reprendre
+pt Continuar
+ru Продолжить
+de Fortsetzen
+ja 再開
+ko 계속
+it Riprendi
+
+= Sereno
+en Serene
+zh 宁静
+fr Serein
+pt Sereno
+ru Спокойная
+de Ruhig
+ja セレーン
+ko 차분
+it Sereno
+
+= Serio
+en Serious
+zh 专业
+fr Sérieux
+pt Sério
+ru Строгая
+de Seriös
+ja シリアス
+ko 진지
+it Serio
+
+= Si a esa hora Replica está ocupada (grabando o reproduciendo), esa vez se salta. Las rutas con programas solo se lanzan si ya los permitiste.
+en If Replica is busy at that time (recording or playing), that run is skipped. Routes with programs only run if you already allowed them.
+zh 如果到时 Replica 正忙（录制或播放中），这一次会跳过。带程序的路线只有在你已允许后才会运行。
+fr Si Replica est occupé à cette heure-là (enregistrement ou lecture), cette fois est sautée. Les routes avec programmes ne se lancent que si vous les avez déjà autorisés.
+pt Se nessa hora o Replica estiver ocupado (gravando ou reproduzindo), essa vez é pulada. Rotas com programas só são executadas se você já os permitiu.
+ru Если в это время Replica занята (запись или воспроизведение), этот запуск пропускается. Маршруты с программами запускаются, только если вы их уже разрешили.
+de Ist Replica zu dieser Zeit beschäftigt (Aufnahme oder Wiedergabe), wird dieser Lauf übersprungen. Routen mit Programmen starten nur, wenn du sie bereits erlaubt hast.
+ja その時刻に Replica が使用中（記録中や再生中）なら、その回はスキップされます。プログラムを含むルートは、すでに許可したものだけ実行されます。
+ko 그 시간에 Replica가 바쁘면 (녹화 또는 재생 중) 그 회차는 건너뜁니다. 프로그램이 있는 경로는 이미 허용한 경우에만 실행됩니다.
+it Se a quell'ora Replica è occupato (in registrazione o riproduzione), quella volta viene saltata. I percorsi con programmi si avviano solo se li hai già consentiti.
+
+= Si no se puede verificar un clic:
+en If a click can't be verified:
+zh 无法验证点击时：
+fr Si un clic ne peut pas être vérifié :
+pt Se não for possível verificar um clique:
+ru Если клик не удаётся проверить:
+de Wenn ein Klick nicht geprüft werden kann:
+ja クリックを確認できないとき:
+ko 클릭을 확인할 수 없을 때:
+it Se un clic non può essere verificato:
+
+= Simplificada: {} → {} pasos.
+en Simplified: {} → {} steps.
+zh 已简化：{} → {} 步。
+fr Simplifiée : {} → {} étapes.
+pt Simplificada: {} → {} passos.
+ru Упрощено: {} → {} шагов.
+de Vereinfacht: {} → {} Schritte.
+ja 簡略化しました: {} → {} ステップ。
+ko 단순화됨: {} → {}단계.
+it Semplificato: {} → {} passi.
+
+= Simplificar movimientos
+en Simplify movements
+zh 简化移动
+fr Simplifier les mouvements
+pt Simplificar movimentos
+ru Упростить движения
+de Bewegungen vereinfachen
+ja 移動を簡略化
+ko 이동 단순화
+it Semplifica movimenti
+
+= Sin pasos
+en No steps
+zh 没有步骤
+fr Aucune étape
+pt Sem passos
+ru Нет шагов
+de Keine Schritte
+ja ステップなし
+ko 단계 없음
+it Nessun passo
+
+= Sin programaciones
+en No schedules
+zh 没有计划
+fr Aucune planification
+pt Sem agendamentos
+ru Нет расписаний
+de Keine Zeitpläne
+ja スケジュールなし
+ko 예약 없음
+it Nessuna pianificazione
+
+= Sin ruta abierta
+en No route open
+zh 未打开路线
+fr Aucune route ouverte
+pt Nenhuma rota aberta
+ru Маршрут не открыт
+de Keine Route geöffnet
+ja ルートが開かれていません
+ko 열린 경로 없음
+it Nessun percorso aperto
+
+= Sin ventana objetivo: coordenadas de pantalla.
+en No target window: screen coordinates.
+zh 没有目标窗口：使用屏幕坐标。
+fr Aucune fenêtre cible : coordonnées de l'écran.
+pt Sem janela alvo: coordenadas da tela.
+ru Без целевого окна: экранные координаты.
+de Kein Zielfenster: Bildschirmkoordinaten.
+ja 対象ウィンドウなし: 画面座標を使用。
+ko 대상 창 없음: 화면 좌표 사용.
+it Nessuna finestra di destinazione: coordinate dello schermo.
+
+= Sodio
+en Sodium
+zh 钠灯
+fr Sodium
+pt Sódio
+ru Натрий
+de Natrium
+ja ナトリウム
+ko 나트륨
+it Sodio
+
+= Soltar clic {}
+en Release {} click
+zh 松开{}键
+fr Relâcher clic {}
+pt Soltar clique {}
+ru Отпустить {} кнопку
+de {}klick loslassen
+ja {} クリックを離す
+ko {} 클릭 떼기
+it Rilascia clic {}
+
+= Soltar tecla {}
+en Release key {}
+zh 松开按键 {}
+fr Relâcher la touche {}
+pt Soltar tecla {}
+ru Отпустить клавишу {}
+de Taste {} loslassen
+ja キー {} を離す
+ko {} 키 떼기
+it Rilascia il tasto {}
+
+= Subir paso
+en Move step up
+zh 上移步骤
+fr Monter l'étape
+pt Subir passo
+ru Переместить шаг вверх
+de Schritt nach oben
+ja ステップを上へ
+ko 단계 위로
+it Sposta passo in alto
+
+= TECLA
+en KEY
+zh 按键
+fr TOUCHE
+pt TECLA
+ru КЛАВИША
+de TASTE
+ja キー
+ko 키
+it TASTO
+
+= TEXTO
+en TEXT
+zh 文本
+fr TEXTE
+pt TEXTO
+ru ТЕКСТ
+de TEXT
+ja テキスト
+ko 텍스트
+it TESTO
+
+= Termina la grabación primero (F9).
+en Finish the recording first (F9).
+zh 请先结束录制（F9）。
+fr Terminez d'abord l'enregistrement (F9).
+pt Termine a gravação primeiro (F9).
+ru Сначала завершите запись (F9).
+de Beende zuerst die Aufnahme (F9).
+ja 先に記録を終了してください（F9）。
+ko 먼저 녹화를 끝내세요 (F9).
+it Termina prima la registrazione (F9).
+
+= Terminando de guardar la grabación anterior…
+en Finishing saving the previous recording…
+zh 正在保存上一次录制…
+fr Fin de la sauvegarde de l'enregistrement précédent…
+pt Terminando de salvar a gravação anterior…
+ru Завершается сохранение предыдущей записи…
+de Vorherige Aufnahme wird noch gespeichert…
+ja 前の記録を保存しています…
+ko 이전 녹화를 저장하는 중…
+it Sto finendo di salvare la registrazione precedente…
+
+= Terminando de guardar la grabación…
+en Finishing saving the recording…
+zh 正在完成录制的保存…
+fr Fin de la sauvegarde de l'enregistrement…
+pt Terminando de salvar a gravação…
+ru Завершается сохранение записи…
+de Aufnahme wird noch gespeichert…
+ja 記録を保存しています…
+ko 녹화를 저장하는 중…
+it Sto finendo di salvare la registrazione…
+
+= Terminar grabación
+en Stop recording
+zh 结束录制
+fr Terminer l'enregistrement
+pt Terminar gravação
+ru Закончить запись
+de Aufnahme beenden
+ja 記録を終了
+ko 녹화 종료
+it Termina registrazione
+
+= Todo lo que ha hecho Replica
+en Everything Replica has done
+zh Replica 的所有操作记录
+fr Tout ce qu'a fait Replica
+pt Tudo o que o Replica fez
+ru Всё, что сделала Replica
+de Alles, was Replica getan hat
+ja Replica が行ったすべての操作
+ko Replica가 한 모든 작업
+it Tutto ciò che ha fatto Replica
+
+= Todo lo que ha hecho Replica en esta sesión.
+en Everything Replica has done in this session.
+zh Replica 在本次会话中的所有操作记录。
+fr Tout ce qu'a fait Replica pendant cette session.
+pt Tudo o que o Replica fez nesta sessão.
+ru Всё, что Replica сделала за этот сеанс.
+de Alles, was Replica in dieser Sitzung getan hat.
+ja このセッションで Replica が行ったすべての操作。
+ko 이번 세션에서 Replica가 한 모든 작업.
+it Tutto ciò che Replica ha fatto in questa sessione.
+
+= VISIÓN
+en VISION
+zh 视觉
+fr VISION
+pt VISÃO
+ru ЗРЕНИЕ
+de SICHT
+ja ビジョン
+ko 비전
+it VISIONE
+
+= Ventana
+en Window
+zh 窗口
+fr Fenêtre
+pt Janela
+ru Окно
+de Fenster
+ja ウィンドウ
+ko 창
+it Finestra
+
+= Ventana en ({}, {}) {}×{} (grabada {}×{}): escala {}×{}.
+en Window at ({}, {}) {}×{} (recorded {}×{}): scale {}×{}.
+zh 窗口位于 ({}, {}) {}×{}（录制时 {}×{}）：缩放 {}×{}。
+fr Fenêtre en ({}, {}) {}×{} (enregistrée {}×{}) : échelle {}×{}.
+pt Janela em ({}, {}) {}×{} (gravada {}×{}): escala {}×{}.
+ru Окно в ({}, {}) {}×{} (при записи {}×{}): масштаб {}×{}.
+de Fenster bei ({}, {}) {}×{} (aufgenommen {}×{}): Skalierung {}×{}.
+ja ウィンドウ位置 ({}, {}) {}×{}（記録時 {}×{}）: 倍率 {}×{}。
+ko 창 위치 ({}, {}) {}×{} (녹화 시 {}×{}): 배율 {}×{}.
+it Finestra a ({}, {}) {}×{} (registrata {}×{}): scala {}×{}.
+
+= Ventana objetivo: {}
+en Target window: {}
+zh 目标窗口：{}
+fr Fenêtre cible : {}
+pt Janela alvo: {}
+ru Целевое окно: {}
+de Zielfenster: {}
+ja 対象ウィンドウ: {}
+ko 대상 창: {}
+it Finestra di destinazione: {}
+
+= Verificar la pantalla antes de cada clic
+en Check the screen before each click
+zh 每次点击前检查屏幕
+fr Vérifier l'écran avant chaque clic
+pt Verificar a tela antes de cada clique
+ru Проверять экран перед каждым кликом
+de Bildschirm vor jedem Klick prüfen
+ja クリックのたびに画面を確認
+ko 클릭할 때마다 화면 확인
+it Verifica lo schermo prima di ogni clic
+
+= abrir «{}»
+en opening “{}”
+zh 打开“{}”
+fr ouvrir « {} »
+pt abrir “{}”
+ru открыть «{}»
+de Öffnen von „{}“
+ja 「{}」を開く
+ko “{}” 열기
+it aprire «{}»
+
+= actualizar lista
+en refresh list
+zh 刷新列表
+fr actualiser la liste
+pt atualizar lista
+ru обновить список
+de Liste aktualisieren
+ja 一覧を更新
+ko 목록 새로고침
+it aggiorna elenco
+
+= ahora: {}
+en currently: {}
+zh 当前：{}
+fr actuellement : {}
+pt agora: {}
+ru сейчас: {}
+de derzeit: {}
+ja 現在: {}
+ko 현재: {}
+it ora: {}
+
+= ancla visual
+en visual anchor
+zh 视觉锚点
+fr ancre visuelle
+pt âncora visual
+ru визуальный якорь
+de visueller Anker
+ja ビジュアルアンカー
+ko 시각 앵커
+it ancora visiva
+
+= atajo
+en hotkey
+zh 快捷键
+fr raccourci
+pt atalho
+ru горячая клавиша
+de Tastenkürzel
+ja ショートカット
+ko 단축키
+it scorciatoia
+
+= cada
+en every
+zh 每隔
+fr toutes les
+pt a cada
+ru каждые
+de alle
+ja 間隔
+ko 간격
+it ogni
+
+= cada día a las {}
+en every day at {}
+zh 每天 {}
+fr chaque jour à {}
+pt todo dia às {}
+ru каждый день в {}
+de täglich um {}
+ja 毎日 {}
+ko 매일 {}
+it ogni giorno alle {}
+
+= cada {} min
+en every {} min
+zh 每 {} 分钟
+fr toutes les {} min
+pt a cada {} min
+ru каждые {} мин
+de alle {} Min.
+ja {} 分ごと
+ko {}분마다
+it ogni {} min
+
+= central
+en middle
+zh 中
+fr central
+pt do meio
+ru среднюю
+de Mittel
+ja 中央
+ko 가운데
+it centrale
+
+= clicar igual
+en click anyway
+zh 仍然点击
+fr cliquer quand même
+pt clicar mesmo assim
+ru всё равно кликнуть
+de trotzdem klicken
+ja そのままクリック
+ko 그래도 클릭
+it clicca comunque
+
+= cuenta atrás s
+en countdown s
+zh 倒计时（秒）
+fr compte à rebours s
+pt contagem regressiva s
+ru обратный отсчёт, с
+de Countdown s
+ja カウントダウン 秒
+ko 카운트다운 초
+it conto alla rovescia s
+
+= de F1 a F8
+en from F1 to F8
+zh F1 至 F8
+fr de F1 à F8
+pt de F1 a F8
+ru от F1 до F8
+de von F1 bis F8
+ja F1〜F8
+ko F1부터 F8까지
+it da F1 a F8
+
+= derecho
+en right
+zh 右
+fr droit
+pt direito
+ru правую
+de Rechts
+ja 右
+ko 오른쪽
+it destro
+
+= detener
+en stop
+zh 停止
+fr arrêter
+pt parar
+ru остановить
+de anhalten
+ja 停止
+ko 중지
+it ferma
+
+= esperar
+en wait
+zh 等待
+fr attendre
+pt esperar
+ru ждать
+de warten
+ja 待機
+ko 대기
+it attendi
+
+= esperar ancla
+en wait for anchor
+zh 等待锚点
+fr attendre l'ancre
+pt esperar âncora
+ru ждать якорь
+de auf Anker warten
+ja アンカー待機
+ko 앵커 대기
+it attendi l'ancora
+
+= guardadas en esta carpeta
+en saved in this folder
+zh 保存在此文件夹中
+fr enregistrées dans ce dossier
+pt salvas nesta pasta
+ru сохранены в этой папке
+de in diesem Ordner gespeichert
+ja このフォルダーに保存
+ko 이 폴더에 저장됨
+it salvati in questa cartella
+
+= hora
+en hour
+zh 时
+fr heure
+pt hora
+ru час
+de Stunde
+ja 時
+ko 시
+it ora
+
+= izquierdo
+en left
+zh 左
+fr gauche
+pt esquerdo
+ru левую
+de Links
+ja 左
+ko 왼쪽
+it sinistro
+
+= ninguno
+en none
+zh 无
+fr aucun
+pt nenhum
+ru нет
+de keines
+ja なし
+ko 없음
+it nessuno
+
+= pantalla completa
+en full screen
+zh 全屏
+fr plein écran
+pt tela inteira
+ru весь экран
+de ganzer Bildschirm
+ja 画面全体
+ko 전체 화면
+it schermo intero
+
+= pantalla completa (coordenadas absolutas)
+en full screen (absolute coordinates)
+zh 全屏（绝对坐标）
+fr plein écran (coordonnées absolues)
+pt tela inteira (coordenadas absolutas)
+ru весь экран (абсолютные координаты)
+de ganzer Bildschirm (absolute Koordinaten)
+ja 画面全体（絶対座標）
+ko 전체 화면 (절대 좌표)
+it schermo intero (coordinate assolute)
+
+= pasos · {} s
+en steps · {} s
+zh 步 · {} 秒
+fr étapes · {} s
+pt passos · {} s
+ru шагов · {} с
+de Schritte · {} s
+ja ステップ · {} 秒
+ko 단계 · {}초
+it passi · {} s
+
+= pausa entre vueltas
+en pause between loops
+zh 每轮间隔
+fr pause entre les tours
+pt pausa entre voltas
+ru пауза между кругами
+de Pause zwischen Runden
+ja ループ間の休止
+ko 반복 사이 쉬는 시간
+it pausa tra i giri
+
+= radio px
+en radius px
+zh 半径（像素）
+fr rayon px
+pt raio px
+ru радиус, пкс
+de Radius px
+ja 半径 px
+ko 반경 px
+it raggio px
+
+= salir
+en quitting
+zh 退出
+fr quitter
+pt sair
+ru выйти
+de Beenden
+ja 終了する
+ko 종료
+it uscire
+
+= se lanzan solas
+en run on their own
+zh 会自动运行
+fr se lancent toutes seules
+pt rodam sozinhas
+ru запускаются сами
+de starten von selbst
+ja 自動で実行
+ko 자동으로 실행
+it partono da sole
+
+= similitud
+en similarity
+zh 相似度
+fr similarité
+pt similaridade
+ru сходство
+de Ähnlichkeit
+ja 類似度
+ko 유사도
+it somiglianza
+
+= sin guardar
+en unsaved
+zh 未保存
+fr non enregistré
+pt não salvo
+ru не сохранено
+de ungespeichert
+ja 未保存
+ko 저장 안 됨
+it non salvato
+
+= texto (ñ, tildes…)
+en text (any language)
+zh 文本（任何语言）
+fr texte (accents, ñ…)
+pt texto (acentos, ñ…)
+ru текст (любые символы)
+de Text (Umlaute, ñ…)
+ja テキスト（日本語も可）
+ko 텍스트 (한글 가능)
+it testo (accenti, ñ…)
+
+= velocidad ×
+en speed ×
+zh 速度 ×
+fr vitesse ×
+pt velocidade ×
+ru скорость ×
+de Tempo ×
+ja 速度 ×
+ko 속도 ×
+it velocità ×
+
+= vueltas
+en loops
+zh 轮数
+fr tours
+pt voltas
+ru круги
+de Runden
+ja ループ回数
+ko 반복 횟수
+it giri
+
+= {} pasos · {} s
+en {} steps · {} s
+zh {} 步 · {} 秒
+fr {} étapes · {} s
+pt {} passos · {} s
+ru {} шагов · {} с
+de {} Schritte · {} s
+ja {} ステップ · {} 秒
+ko {}단계 · {}초
+it {} passi · {} s
+
+= {} programaciones activas
+en {} active schedules
+zh {} 个计划已启用
+fr {} planifications actives
+pt {} agendamentos ativos
+ru активных расписаний: {}
+de {} aktive Zeitpläne
+ja 有効なスケジュール {} 件
+ko 활성 예약 {}개
+it {} pianificazioni attive
+
+= {} · {} pasos
+en {} · {} steps
+zh {} · {} 步
+fr {} · {} étapes
+pt {} · {} passos
+ru {} · шагов: {}
+de {} · {} Schritte
+ja {} · {} ステップ
+ko {} · {}단계
+it {} · {} passi
+
+= {}. Ruta detenida.
+en {}. Route stopped.
+zh {}。路线已停止。
+fr {}. Route arrêtée.
+pt {}. Rota interrompida.
+ru {}. Маршрут остановлен.
+de {}. Route angehalten.
+ja {}。ルートを停止しました。
+ko {}. 경로를 중지했습니다.
+it {}. Percorso interrotto.
+
+= {}: '{}' ejecuta programas sin permitir; ábrela y pulsa «permitir».
+en {}: '{}' runs programs that aren't allowed; open it and press “Allow”.
+zh {}：“{}”会运行未允许的程序；请打开它并点击“允许”。
+fr {} : '{}' lance des programmes non autorisés ; ouvrez-la et appuyez sur « Autoriser ».
+pt {}: '{}' executa programas não permitidos; abra-a e pressione “Permitir”.
+ru {}: «{}» запускает неразрешённые программы; откройте маршрут и нажмите «Разрешить».
+de {}: '{}' startet nicht erlaubte Programme; öffne sie und drücke „Erlauben“.
+ja {}: 「{}」は許可されていないプログラムを実行します。開いて「許可」を押してください。
+ko {}: '{}'은(는) 허용되지 않은 프로그램을 실행합니다. 열어서 “허용”을 누르세요.
+it {}: '{}' esegue programmi non consentiti; aprilo e premi «Consenti».
+
+= {}: '{}' no se lanza, Replica está ocupada.
+en {}: '{}' not started, Replica is busy.
+zh {}：“{}”未运行，Replica 正忙。
+fr {} : '{}' non lancée, Replica est occupé.
+pt {}: '{}' não foi executada, o Replica está ocupado.
+ru {}: «{}» не запущен, Replica занята.
+de {}: '{}' nicht gestartet, Replica ist beschäftigt.
+ja {}: 「{}」は実行されません。Replica は使用中です。
+ko {}: '{}'을(를) 실행하지 않습니다. Replica가 사용 중입니다.
+it {}: '{}' non avviato, Replica è occupato.
+
+= {}: '{}' no se lanza: la ruta abierta tiene cambios sin guardar.
+en {}: '{}' not started: the open route has unsaved changes.
+zh {}：“{}”未运行：当前打开的路线有未保存的更改。
+fr {} : '{}' non lancée : la route ouverte a des modifications non enregistrées.
+pt {}: '{}' não foi executada: a rota aberta tem alterações não salvas.
+ru {}: «{}» не запущен: в открытом маршруте есть несохранённые изменения.
+de {}: '{}' nicht gestartet: Die geöffnete Route hat ungespeicherte Änderungen.
+ja {}: 「{}」は実行されません。開いているルートに未保存の変更があります。
+ko {}: '{}'을(를) 실행하지 않습니다: 열린 경로에 저장하지 않은 변경 사항이 있습니다.
+it {}: '{}' non avviato: il percorso aperto ha modifiche non salvate.
+
+= {}: lanzando '{}'.
+en {}: starting '{}'.
+zh {}：正在运行“{}”。
+fr {} : lancement de '{}'.
+pt {}: executando '{}'.
+ru {}: запуск «{}».
+de {}: starte '{}'.
+ja {}: 「{}」を実行します。
+ko {}: '{}' 실행 중.
+it {}: avvio di '{}'.
+
+= {}; clic en la posición grabada.
+en {}; clicking at the recorded position.
+zh {}；在录制的位置点击。
+fr {} ; clic à la position enregistrée.
+pt {}; clique na posição gravada.
+ru {}; клик в записанной позиции.
+de {}; Klick an der aufgenommenen Position.
+ja {}。記録した位置をクリックします。
+ko {}; 녹화된 위치를 클릭합니다.
+it {}; clic nella posizione registrata.
+
+= ¿Qué quieres hacer?
+en What do you want to do?
+zh 你想做什么？
+fr Que voulez-vous faire ?
+pt O que você quer fazer?
+ru Что вы хотите сделать?
+de Was möchtest du tun?
+ja 何をしますか？
+ko 무엇을 할까요?
+it Cosa vuoi fare?
+
+= × Error al ejecutar '{}': {}
+en × Error running '{}': {}
+zh × 运行“{}”时出错：{}
+fr × Erreur lors de l'exécution de '{}' : {}
+pt × Erro ao executar '{}': {}
+ru × Ошибка при запуске «{}»: {}
+de × Fehler beim Ausführen von '{}': {}
+ja × 「{}」の実行エラー: {}
+ko × '{}' 실행 오류: {}
+it × Errore durante l'esecuzione di '{}': {}
+
+= × Error interno durante la reproducción.
+en × Internal error during playback.
+zh × 播放时发生内部错误。
+fr × Erreur interne pendant la lecture.
+pt × Erro interno durante a reprodução.
+ru × Внутренняя ошибка во время воспроизведения.
+de × Interner Fehler während der Wiedergabe.
+ja × 再生中に内部エラーが発生しました。
+ko × 재생 중 내부 오류가 발생했습니다.
+it × Errore interno durante la riproduzione.
+
+= × No hay ninguna fuente para {} instalada en el sistema.
+en × No font for {} is installed on the system.
+zh × 系统中没有安装 {} 所需的字体。
+fr × Aucune police pour {} n'est installée sur le système.
+pt × Não há nenhuma fonte para {} instalada no sistema.
+ru × В системе не установлен шрифт для языка {}.
+de × Für {} ist keine Schrift im System installiert.
+ja × {} 用のフォントがシステムにインストールされていません。
+ko × 시스템에 {}용 글꼴이 설치되어 있지 않습니다.
+it × Nessun font per {} è installato nel sistema.
+
+= × No se pudo cargar '{}': {}
+en × Couldn't load '{}': {}
+zh × 无法加载“{}”：{}
+fr × Impossible de charger '{}' : {}
+pt × Não foi possível carregar '{}': {}
+ru × Не удалось загрузить «{}»: {}
+de × '{}' konnte nicht geladen werden: {}
+ja × 「{}」を読み込めませんでした: {}
+ko × '{}'을(를) 불러올 수 없습니다: {}
+it × Impossibile caricare '{}': {}
+
+= × No se pudo escribir {}: {}
+en × Couldn't type {}: {}
+zh × 无法输入 {}：{}
+fr × Impossible de saisir {} : {}
+pt × Não foi possível digitar {}: {}
+ru × Не удалось ввести {}: {}
+de × {} konnte nicht getippt werden: {}
+ja × {} を入力できませんでした: {}
+ko × {}을(를) 입력할 수 없습니다: {}
+it × Impossibile scrivere {}: {}
+
+= × No se pudo guardar la configuración: {}
+en × Couldn't save the settings: {}
+zh × 无法保存配置：{}
+fr × Impossible d'enregistrer la configuration : {}
+pt × Não foi possível salvar a configuração: {}
+ru × Не удалось сохранить настройки: {}
+de × Einstellungen konnten nicht gespeichert werden: {}
+ja × 設定を保存できませんでした: {}
+ko × 설정을 저장할 수 없습니다: {}
+it × Impossibile salvare la configurazione: {}
+
+= × No se pudo guardar la ruta: {}
+en × Couldn't save the route: {}
+zh × 无法保存路线：{}
+fr × Impossible d'enregistrer la route : {}
+pt × Não foi possível salvar a rota: {}
+ru × Не удалось сохранить маршрут: {}
+de × Route konnte nicht gespeichert werden: {}
+ja × ルートを保存できませんでした: {}
+ko × 경로를 저장할 수 없습니다: {}
+it × Impossibile salvare il percorso: {}
+
+= × No se pudo guardar: {}
+en × Couldn't save: {}
+zh × 无法保存：{}
+fr × Impossible d'enregistrer : {}
+pt × Não foi possível salvar: {}
+ru × Не удалось сохранить: {}
+de × Speichern fehlgeschlagen: {}
+ja × 保存できませんでした: {}
+ko × 저장할 수 없습니다: {}
+it × Impossibile salvare: {}
+
+= × No se pudo simular {}: {}
+en × Couldn't simulate {}: {}
+zh × 无法模拟 {}：{}
+fr × Impossible de simuler {} : {}
+pt × Não foi possível simular {}: {}
+ru × Не удалось сымитировать {}: {}
+de × {} konnte nicht simuliert werden: {}
+ja × {} をシミュレートできませんでした: {}
+ko × {}을(를) 시뮬레이션할 수 없습니다: {}
+it × Impossibile simulare {}: {}
+
+= × Paso {}: {}
+en × Step {}: {}
+zh × 第 {} 步：{}
+fr × Étape {} : {}
+pt × Passo {}: {}
+ru × Шаг {}: {}
+de × Schritt {}: {}
+ja × ステップ {}: {}
+ko × {}단계: {}
+it × Passo {}: {}
+
+= × {}: no se pudo cargar '{}': {}
+en × {}: couldn't load '{}': {}
+zh × {}：无法加载“{}”：{}
+fr × {} : impossible de charger '{}' : {}
+pt × {}: não foi possível carregar '{}': {}
+ru × {}: не удалось загрузить «{}»: {}
+de × {}: '{}' konnte nicht geladen werden: {}
+ja × {}: 「{}」を読み込めませんでした: {}
+ko × {}: '{}'을(를) 불러올 수 없습니다: {}
+it × {}: impossibile caricare '{}': {}
+
+= última {}
+en last {}
+zh 上次 {}
+fr dernière {}
+pt última {}
+ru последний {}
+de zuletzt {}
+ja 前回 {}
+ko 마지막 {}
+it ultima {}
+
+= ▶ Reanudando.
+en ▶ Resuming.
+zh ▶ 继续。
+fr ▶ Reprise.
+pt ▶ Continuando.
+ru ▶ Продолжение.
+de ▶ Wird fortgesetzt.
+ja ▶ 再開します。
+ko ▶ 계속합니다.
+it ▶ Ripresa.
+
+= ● Grabando ruta '{}'. Pulsa F9 para terminar.
+en ● Recording route '{}'. Press F9 to finish.
+zh ● 正在录制路线“{}”。按 F9 结束。
+fr ● Enregistrement de la route '{}'. Appuyez sur F9 pour terminer.
+pt ● Gravando rota '{}'. Pressione F9 para terminar.
+ru ● Запись маршрута «{}». Нажмите F9, чтобы закончить.
+de ● Route '{}' wird aufgenommen. Drücke F9 zum Beenden.
+ja ● ルート「{}」を記録中。F9 で終了します。
+ko ● 경로 '{}' 녹화 중. F9를 눌러 끝내세요.
+it ● Registrazione del percorso '{}'. Premi F9 per terminare.
+
+= ■ Ruta '{}' guardada: {} pasos, {} s. {}
+en ■ Route '{}' saved: {} steps, {} s. {}
+zh ■ 已保存路线“{}”：{} 步，{} 秒。{}
+fr ■ Route '{}' enregistrée : {} étapes, {} s. {}
+pt ■ Rota '{}' salva: {} passos, {} s. {}
+ru ■ Маршрут «{}» сохранён: шагов {}, {} с. {}
+de ■ Route '{}' gespeichert: {} Schritte, {} s. {}
+ja ■ ルート「{}」を保存しました: {} ステップ、{} 秒。{}
+ko ■ 경로 '{}' 저장됨: {}단계, {}초. {}
+it ■ Percorso '{}' salvato: {} passi, {} s. {}
+
+= ▶ Reproduciendo '{}' (F11 pausa · F12 para).
+en ▶ Playing '{}' (F11 pause · F12 stop).
+zh ▶ 正在播放“{}”（F11 暂停 · F12 停止）。
+fr ▶ Lecture de '{}' (F11 pause · F12 arrêt).
+pt ▶ Reproduzindo '{}' (F11 pausa · F12 para).
+ru ▶ Воспроизведение «{}» (F11 пауза · F12 стоп).
+de ▶ '{}' wird abgespielt (F11 Pause · F12 Stopp).
+ja ▶ 「{}」を再生中（F11 一時停止 · F12 停止）。
+ko ▶ '{}' 재생 중 (F11 일시 정지 · F12 정지).
+it ▶ Riproduzione di '{}' (F11 pausa · F12 ferma).
+
+= ⚠ Esta ruta ejecuta programas en tu equipo:
+en ⚠ This route runs programs on your computer:
+zh ⚠ 此路线会在你的电脑上运行程序：
+fr ⚠ Cette route lance des programmes sur votre ordinateur :
+pt ⚠ Esta rota executa programas no seu computador:
+ru ⚠ Этот маршрут запускает программы на вашем компьютере:
+de ⚠ Diese Route startet Programme auf deinem Computer:
+ja ⚠ このルートはお使いのコンピューターでプログラムを実行します:
+ko ⚠ 이 경로는 컴퓨터에서 프로그램을 실행합니다:
+it ⚠ Questo percorso esegue programmi sul tuo computer:
+
+= ✔ Ruta completada.
+en ✔ Route completed.
+zh ✔ 路线已完成。
+fr ✔ Route terminée.
+pt ✔ Rota concluída.
+ru ✔ Маршрут выполнен.
+de ✔ Route abgeschlossen.
+ja ✔ ルートが完了しました。
+ko ✔ 경로를 완료했습니다.
+it ✔ Percorso completato.
+
+= Paso {} ejecutado: {}
+en Step {} done: {}
+zh 已执行第 {} 步：{}
+fr Étape {} exécutée : {}
+pt Passo {} executado: {}
+ru Шаг {} выполнен: {}
+de Schritt {} ausgeführt: {}
+ja ステップ {} を実行しました: {}
+ko {}단계 실행됨: {}
+it Passo {} eseguito: {}

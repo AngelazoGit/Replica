@@ -3,6 +3,7 @@
 
 use crate::bot::{Bot, Mode, ROUTE_HOTKEYS, simplify_moves};
 use crate::config::{Schedule, When};
+use crate::i18n::{self, tr, trf};
 use crate::model::{Action, MissingAnchor, Route, Settings, Step, Target};
 use crate::theme::{self, card, chip, mono, pal, prop, titulo};
 use eframe::egui::{
@@ -34,11 +35,11 @@ impl Vista {
 
     fn etiqueta(self) -> &'static str {
         match self {
-            Vista::Inicio => "Inicio",
-            Vista::Rutas => "Rutas",
-            Vista::Programador => "Programador",
-            Vista::Registro => "Registro",
-            Vista::Ajustes => "Ajustes",
+            Vista::Inicio => tr("Inicio"),
+            Vista::Rutas => tr("Rutas"),
+            Vista::Programador => tr("Programador"),
+            Vista::Registro => tr("Registro"),
+            Vista::Ajustes => tr("Ajustes"),
         }
     }
     fn icono(self) -> &'static str {
@@ -52,14 +53,24 @@ impl Vista {
     }
     fn ayuda(self) -> &'static str {
         match self {
-            Vista::Inicio => "Resumen y accesos rápidos",
-            Vista::Rutas => "Grabar, editar y reproducir rutas",
-            Vista::Programador => "Lanzar rutas a una hora o cada X minutos",
-            Vista::Registro => "Todo lo que ha hecho Replica",
-            Vista::Ajustes => "Máscara visual y bandeja del sistema",
+            Vista::Inicio => tr("Resumen y accesos rápidos"),
+            Vista::Rutas => tr("Grabar, editar y reproducir rutas"),
+            Vista::Programador => tr("Lanzar rutas a una hora o cada X minutos"),
+            Vista::Registro => tr("Todo lo que ha hecho Replica"),
+            Vista::Ajustes => tr("Máscara visual, idioma y bandeja del sistema"),
         }
     }
 }
+
+/// Nombres de las máscaras en el idioma actual (mismo orden que `theme::MASCARAS`).
+const NOMBRES_MASCARA: [fn() -> &'static str; 6] = [
+    || tr("Serio"),
+    || tr("Limpio"),
+    || tr("Sereno"),
+    || tr("Neutro"),
+    || tr("Mando"),
+    || tr("Sodio"),
+];
 
 /// Acción que espera confirmación porque hay cambios sin guardar.
 enum Pendiente {
@@ -180,7 +191,7 @@ impl App {
     fn deshacer(&mut self) {
         if let Some(prev) = self.undo.pop() {
             self.bot.state.lock().unwrap().route = prev;
-            self.bot.log("Deshecho el último cambio.");
+            self.bot.log(tr("Deshecho el último cambio."));
         }
     }
 
@@ -188,24 +199,71 @@ impl App {
         match self.bot.save_route() {
             Ok(()) => {
                 let name = self.bot.state.lock().unwrap().route.name.clone();
-                self.bot.log(format!("Ruta '{name}' guardada."));
+                self.bot.log(trf("Ruta '{}' guardada.", &[&name]));
                 self.resnap();
                 self.routes = Route::list();
             }
-            Err(e) => self.bot.log(format!("Error guardando: {e}")),
+            Err(e) => self.bot.log(trf("× No se pudo guardar: {}", &[&e])),
         }
     }
 
     fn cargar(&mut self, name: &str) {
         match self.bot.load_route(name) {
             Ok(()) => {
-                self.bot.log(format!("Ruta '{name}' cargada."));
+                self.bot.log(trf("Ruta '{}' cargada.", &[&name]));
                 self.resnap();
                 self.textures.clear();
                 self.vista = Vista::Rutas;
             }
-            Err(e) => self.bot.log(format!("Error cargando '{name}': {e}")),
+            Err(e) => self
+                .bot
+                .log(trf("× No se pudo cargar '{}': {}", &[&name, &e])),
         }
+    }
+
+    /// Desplegable compacto de idioma en la cabecera (como el botón ES/EN de CAPAS).
+    fn selector_idioma(&mut self, ui: &mut Ui) {
+        let ctx = ui.ctx().clone();
+        let mut elegido = None;
+        egui::ComboBox::from_id_salt("idioma")
+            .selected_text(RichText::new(i18n::codigo().to_uppercase()).font(mono(12.0)))
+            .width(56.0)
+            .show_ui(ui, |ui| {
+                for (code, nombre) in i18n::IDIOMAS {
+                    if ui
+                        .selectable_label(code == i18n::codigo(), nombre)
+                        .clicked()
+                    {
+                        elegido = Some(code);
+                    }
+                }
+            })
+            .response
+            .on_hover_text(tr("Idioma"));
+        if let Some(code) = elegido {
+            self.cambiar_idioma(&ctx, code);
+        }
+    }
+
+    fn cambiar_idioma(&mut self, ctx: &egui::Context, code: &str) {
+        if code == i18n::codigo() {
+            return;
+        }
+        if !theme::cargar_fuentes(ctx, code) {
+            theme::cargar_fuentes(ctx, i18n::codigo()); // se queda como estaba
+            let nombre = i18n::IDIOMAS
+                .iter()
+                .find(|(c, _)| *c == code)
+                .map_or(code, |(_, n)| n);
+            self.bot.log(trf(
+                "× No hay ninguna fuente para {} instalada en el sistema.",
+                &[&nombre],
+            ));
+            return;
+        }
+        i18n::set(code);
+        self.bot.state.lock().unwrap().config.lang = Some(code.to_string());
+        self.bot.save_config();
     }
 
     /// Cargar otra ruta, preguntando antes si hay cambios sin guardar.
@@ -267,7 +325,9 @@ impl eframe::App for App {
             if tray {
                 ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
                 ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
-                bot.log("Replica sigue en la bandeja del sistema (atajos y programador activos).");
+                bot.log(tr(
+                    "Replica sigue en la bandeja del sistema (atajos y programador activos).",
+                ));
             } else if dirty {
                 ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
                 self.pendiente = Some(Pendiente::Cerrar);
@@ -353,9 +413,10 @@ impl App {
         );
         ui.add_space(2.0);
         ui.label(
-            RichText::new("Graba lo que haces y lo\nrepite por ti, mirando la pantalla")
-                .font(prop(10.5))
-                .color(c.suave),
+            RichText::new(tr("Graba lo que haces y lo
+repite por ti, mirando la pantalla"))
+            .font(prop(10.5))
+            .color(c.suave),
         );
         ui.add_space(14.0);
         let yd = ui.cursor().top();
@@ -381,15 +442,19 @@ impl App {
                 st.config.schedules.iter().filter(|s| s.enabled).collect();
             let (txt, col) = match activas.first() {
                 Some(s) if activas.len() == 1 => (format!("{} · {}", s.route, s.label()), c.verde),
-                Some(_) => (format!("{} programaciones activas", activas.len()), c.verde),
-                None => ("Sin programaciones".into(), c.medio),
+                Some(_) => (trf("{} programaciones activas", &[&activas.len()]), c.verde),
+                None => (tr("Sin programaciones").into(), c.medio),
             };
             drop(st);
             ui.label(RichText::new(txt).font(prop(11.0)).color(c.suave));
             ui.horizontal(|ui| {
                 let (rid, _) = ui.allocate_exact_size(Vec2::splat(10.0), Sense::hover());
                 ui.painter().circle_filled(rid.center(), 4.0, col);
-                ui.label(RichText::new("Programador").font(titulo(12.5)).color(col));
+                ui.label(
+                    RichText::new(tr("Programador"))
+                        .font(titulo(12.5))
+                        .color(col),
+                );
             });
         });
     }
@@ -441,53 +506,57 @@ impl App {
                 ui.add_space(13.0);
                 ui.label(RichText::new(format!("REPLICA   ›   {}", self.vista.etiqueta())).font(prop(11.0)).color(c.suave));
                 let t = match mode {
-                    Mode::Recording => format!("Grabando… {rec_steps} pasos"),
-                    Mode::Playing if play.countdown > 0 => format!("Empieza en {}…", play.countdown),
-                    Mode::Playing if paused => "En pausa".to_string(),
+                    Mode::Recording => trf("Grabando… {} pasos", &[&rec_steps]),
+                    Mode::Playing if play.countdown > 0 => trf("Empieza en {}…", &[&play.countdown]),
+                    Mode::Playing if paused => tr("En pausa").to_string(),
                     Mode::Playing if play.steps > 0 => {
                         let laps = if play.laps == 0 { "∞".to_string() } else { play.laps.to_string() };
-                        format!("Reproduciendo · vuelta {}/{laps}", play.lap)
+                        trf("Reproduciendo · vuelta {}/{}", &[&play.lap, &laps])
                     }
-                    Mode::Playing => "Ejecutando…".to_string(),
-                    Mode::Idle if saving => "Guardando la grabación…".to_string(),
-                    Mode::Idle if route_name.is_empty() => "Listo para grabar".to_string(),
-                    Mode::Idle => format!("Listo · {route_name}"),
+                    Mode::Playing => tr("Ejecutando…").to_string(),
+                    Mode::Idle if saving => tr("Guardando la grabación…").to_string(),
+                    Mode::Idle if route_name.is_empty() => tr("Listo para grabar").to_string(),
+                    Mode::Idle => trf("Listo · {}", &[&route_name]),
                 };
                 ui.label(RichText::new(t).font(titulo(22.0)).color(c.texto));
             });
 
-            ui.with_layout(Layout::right_to_left(Align::Center), |ui| match mode {
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                self.selector_idioma(ui);
+                ui.add_space(6.0);
+                match mode {
                 Mode::Playing => {
-                    if ui.add(theme::boton_pri("■  Parar  F12", c.rojo)).clicked() {
+                    if ui.add(theme::boton_pri(&format!("■  {}  F12", tr("Parar")), c.rojo)).clicked() {
                         bot.stop_all();
                     }
-                    let t = if paused { "▶  Seguir  F11" } else { "❚❚  Pausa  F11" };
-                    if ui.add(theme::boton_sec(t)).clicked() {
+                    let t = if paused { format!("▶  {}  F11", tr("Seguir")) } else { format!("❚❚  {}  F11", tr("Pausa")) };
+                    if ui.add(theme::boton_sec(&t)).clicked() {
                         bot.toggle_pause();
                     }
                 }
                 Mode::Recording => {
-                    if ui.add(theme::boton_pri("■  Terminar grabación  F9", c.rojo)).clicked() {
+                    if ui.add(theme::boton_pri(&format!("■  {}  F9", tr("Terminar grabación")), c.rojo)).clicked() {
                         bot.toggle_record(true);
                     }
                 }
                 Mode::Idle => {
                     let listo = steps > 0 && !saving;
                     if ui
-                        .add_enabled(listo, theme::boton_pri("▶  Reproducir  F10", c.acento))
-                        .on_hover_text("Repite la ruta cargada con sus ajustes (cuenta atrás incluida)")
+                        .add_enabled(listo, theme::boton_pri(&format!("▶  {}  F10", tr("Reproducir")), c.acento))
+                        .on_hover_text(tr("Repite la ruta cargada con sus ajustes (cuenta atrás incluida)"))
                         .clicked()
                     {
                         bot.toggle_play();
                     }
                     if ui
-                        .add_enabled(!saving, theme::boton_pri("●  Grabar  F9", c.rojo))
-                        .on_hover_text("Empieza a grabar. Mejor con F9 desde el juego: así no se graba el clic en Replica")
+                        .add_enabled(!saving, theme::boton_pri(&format!("●  {}  F9", tr("Grabar")), c.rojo))
+                        .on_hover_text(tr("Empieza a grabar. Mejor con F9 desde el juego: así no se graba el clic en Replica"))
                         .clicked()
                     {
                         bot.toggle_record(true);
                         self.vista = Vista::Rutas;
                     }
+                }
                 }
             });
         });
@@ -516,15 +585,15 @@ impl App {
             let (rid, _) = ui.allocate_exact_size(Vec2::splat(9.0), Sense::hover());
             ui.painter().circle_filled(rid.center(), 4.0, c.verde);
             ui.label(
-                RichText::new("Entrada global activa")
+                RichText::new(tr("Entrada global activa"))
                     .font(prop(11.5))
                     .color(c.suave),
             );
             ui.label(RichText::new("·").font(prop(11.5)).color(c.medio));
             ui.label(
-                RichText::new(
+                RichText::new(tr(
                     "F9 grabar · F10 reproducir · F11 pausa · F12 parar · F1–F8 atajos de ruta",
-                )
+                ))
                 .font(mono(11.0))
                 .color(c.medio),
             );
@@ -535,14 +604,14 @@ impl App {
                 };
                 if dirty {
                     ui.label(
-                        RichText::new("● sin guardar")
+                        RichText::new(format!("● {}", tr("sin guardar")))
                             .font(prop(11.5))
                             .color(c.naranja),
                     );
                 }
                 if !name.is_empty() || mode == Mode::Recording {
                     ui.label(
-                        RichText::new(format!("{name} · {n} pasos"))
+                        RichText::new(trf("{} · {} pasos", &[&name, &n]))
                             .font(prop(11.5))
                             .color(c.suave),
                     );
@@ -556,8 +625,8 @@ impl App {
         let c = pal();
         let name = self.bot.state.lock().unwrap().route.name.clone();
         let accion = match p {
-            Pendiente::Cargar(r) => format!("abrir «{r}»"),
-            Pendiente::Cerrar => "salir".to_string(),
+            Pendiente::Cargar(r) => trf("abrir «{}»", &[r]),
+            Pendiente::Cerrar => tr("salir").to_string(),
         };
         let mut elegido = None;
         egui::Modal::new(egui::Id::unique("sin_guardar"))
@@ -574,28 +643,29 @@ impl App {
                         c.naranja,
                     );
                     ui.label(
-                        RichText::new("Cambios sin guardar")
+                        RichText::new(tr("Cambios sin guardar"))
                             .font(titulo(17.0))
                             .color(c.texto),
                     );
                 });
                 ui.add_space(6.0);
                 ui.label(
-                    RichText::new(format!(
-                        "La ruta «{name}» tiene cambios. ¿Qué hago antes de {accion}?"
+                    RichText::new(trf(
+                        "La ruta «{}» tiene cambios. ¿Qué hago antes de {}?",
+                        &[&name, &accion],
                     ))
                     .font(prop(13.0))
                     .color(c.suave),
                 );
                 ui.add_space(14.0);
                 ui.horizontal(|ui| {
-                    if ui.add(theme::boton_pri("Guardar", c.acento)).clicked() {
+                    if ui.add(theme::boton_pri(tr("Guardar"), c.acento)).clicked() {
                         elegido = Some(1);
                     }
-                    if ui.add(theme::boton_sec("Descartar cambios")).clicked() {
+                    if ui.add(theme::boton_sec(tr("Descartar cambios"))).clicked() {
                         elegido = Some(2);
                     }
-                    if ui.add(theme::boton_sec("Cancelar")).clicked() {
+                    if ui.add(theme::boton_sec(tr("Cancelar"))).clicked() {
                         elegido = Some(0);
                     }
                 });
@@ -631,7 +701,7 @@ impl App {
                 theme::marca(&p, Pos2::new(r.left() + 26.0, r.center().y), 17.0, c.acento);
                 p.text(Pos2::new(r.left() + 62.0, r.center().y), Align2::LEFT_CENTER, "Replica", titulo(38.0), c.texto);
                 ui.label(
-                    RichText::new("Graba una vez lo que haces con ratón y teclado; Replica lo repite mirando la pantalla.")
+                    RichText::new(tr("Graba una vez lo que haces con ratón y teclado; Replica lo repite mirando la pantalla."))
                         .font(prop(13.5))
                         .color(c.suave),
                 );
@@ -650,37 +720,37 @@ impl App {
                 )
             };
             ui.columns(4, |cols| {
-                theme::stat_card(&mut cols[0], "Rutas", &n_rutas.to_string(), "guardadas en esta carpeta", c.acento);
-                theme::stat_card(&mut cols[1], "Ruta abierta", &steps.to_string(), &format!("pasos · {secs:.1} s"), c.verde);
-                theme::stat_card(&mut cols[2], "Programadas", &activas.to_string(), "se lanzan solas", c.naranja);
-                theme::stat_card(&mut cols[3], "Atajos", &atajos.to_string(), "de F1 a F8", c.suave);
+                theme::stat_card(&mut cols[0], tr("Rutas"), &n_rutas.to_string(), tr("guardadas en esta carpeta"), c.acento);
+                theme::stat_card(&mut cols[1], tr("Ruta abierta"), &steps.to_string(), &trf("pasos · {} s", &[&format!("{secs:.1}")]), c.verde);
+                theme::stat_card(&mut cols[2], tr("Programadas"), &activas.to_string(), tr("se lanzan solas"), c.naranja);
+                theme::stat_card(&mut cols[3], tr("Atajos"), &atajos.to_string(), tr("de F1 a F8"), c.suave);
             });
             ui.add_space(18.0);
-            ui.label(RichText::new("¿Qué quieres hacer?").font(titulo(14.0)).color(c.texto));
+            ui.label(RichText::new(tr("¿Qué quieres hacer?")).font(titulo(14.0)).color(c.texto));
             ui.add_space(6.0);
             ui.columns(3, |cols| {
-                if theme::tarjeta_accion(&mut cols[0], "grabar", "Grabar una ruta", "Pulsa F9 en el juego, haz la tarea una vez y pulsa F9 otra vez.")
+                if theme::tarjeta_accion(&mut cols[0], "grabar", tr("Grabar una ruta"), tr("Pulsa F9 en el juego, haz la tarea una vez y pulsa F9 otra vez."))
                     && mode == Mode::Idle
                 {
                     self.vista = Vista::Rutas;
                 }
-                if theme::tarjeta_accion(&mut cols[1], "rutas", "Abrir y editar rutas", "Ajustes por ruta, paso a paso, deshacer y anclas visuales.") {
+                if theme::tarjeta_accion(&mut cols[1], "rutas", tr("Abrir y editar rutas"), tr("Ajustes por ruta, paso a paso, deshacer y anclas visuales.")) {
                     self.vista = Vista::Rutas;
                 }
-                if theme::tarjeta_accion(&mut cols[2], "reloj", "Programar", "Lanza una ruta cada día a una hora o cada X minutos.") {
+                if theme::tarjeta_accion(&mut cols[2], "reloj", tr("Programar"), tr("Lanza una ruta cada día a una hora o cada X minutos.")) {
                     self.vista = Vista::Programador;
                 }
             });
             ui.add_space(18.0);
-            theme::tarjeta(ui, "Atajos", |ui| {
+            theme::tarjeta(ui, tr("Atajos"), |ui| {
                 egui::Grid::new("atajos").num_columns(2).spacing([24.0, 6.0]).show(ui, |ui| {
                     for (k, t) in [
-                        ("F9", "Empezar / terminar la grabación"),
-                        ("F10", "Reproducir / parar la ruta abierta"),
-                        ("F11", "Pausar / seguir (suelta las teclas mantenidas)"),
-                        ("F12", "Corte de emergencia"),
-                        ("F1–F8", "Lanzar la ruta que tenga ese atajo (Rutas → Ajustes de la ruta)"),
-                        ("Ctrl+Z / Ctrl+S", "Deshacer / guardar en el editor"),
+                        ("F9", tr("Empezar / terminar la grabación")),
+                        ("F10", tr("Reproducir / parar la ruta abierta")),
+                        ("F11", tr("Pausar / seguir (suelta las teclas mantenidas)")),
+                        ("F12", tr("Corte de emergencia")),
+                        ("F1–F8", tr("Lanzar la ruta que tenga ese atajo (Rutas → Ajustes de la ruta)")),
+                        ("Ctrl+Z / Ctrl+S", tr("Deshacer / guardar en el editor")),
                     ] {
                         chip(ui, k, c.acento);
                         ui.label(RichText::new(t).font(prop(12.5)).color(c.suave));
@@ -719,9 +789,9 @@ impl App {
 
     fn panel_lista(&mut self, ui: &mut Ui, editable: bool) {
         let c = pal();
-        theme::encabezado_panel(ui, "Rutas");
+        theme::encabezado_panel(ui, tr("Rutas"));
         ui.label(
-            RichText::new("Nombre para la próxima grabación")
+            RichText::new(tr("Nombre para la próxima grabación"))
                 .font(prop(11.5))
                 .color(c.suave),
         );
@@ -733,7 +803,7 @@ impl App {
         if self.routes.is_empty() {
             theme::ayuda(
                 ui,
-                "Aún no hay rutas. Pulsa F9 en el juego para grabar la primera.",
+                tr("Aún no hay rutas. Pulsa F9 en el juego para grabar la primera."),
             );
         }
         let actual = self.bot.state.lock().unwrap().route.name.clone();
@@ -794,7 +864,7 @@ impl App {
             self.pedir_cargar(n);
         }
         ui.with_layout(Layout::bottom_up(Align::Min), |ui| {
-            if ui.add(theme::boton_mini("Actualizar lista")).clicked() {
+            if ui.add(theme::boton_mini(tr("Actualizar lista"))).clicked() {
                 self.routes = Route::list();
                 self.bot.refresh_hotkeys();
             }
@@ -803,46 +873,49 @@ impl App {
 
     fn panel_ajustes(&mut self, ui: &mut Ui) {
         let c = pal();
-        theme::encabezado_panel(ui, "Ajustes de la ruta");
-        theme::ayuda(ui, "Se guardan con la ruta: cada ruta recuerda los suyos.");
+        theme::encabezado_panel(ui, tr("Ajustes de la ruta"));
+        theme::ayuda(
+            ui,
+            tr("Se guardan con la ruta: cada ruta recuerda los suyos."),
+        );
         ui.add_space(6.0);
         let bot = self.bot.clone();
         egui::ScrollArea::vertical().id_salt("ajustes").auto_shrink([false, false]).show(ui, |ui| {
             let mut st = bot.state.lock().unwrap();
             let route_name = st.route.name.clone();
             let s = &mut st.settings;
-            ui.label(RichText::new("REPRODUCCIÓN").font(mono(10.0)).color(c.suave));
-            ui.add(egui::Slider::new(&mut s.speed, 0.25..=4.0).text("velocidad ×"));
-            ui.add(egui::DragValue::new(&mut s.loops).prefix("vueltas ").suffix("  (0 = ∞)"));
-            ui.add(egui::DragValue::new(&mut s.pause_between_loops_ms).prefix("pausa entre vueltas ").suffix(" ms").speed(10));
-            ui.add(egui::Slider::new(&mut s.countdown_s, 0..=10).text("cuenta atrás s"));
-            ui.checkbox(&mut s.humanize, "Humanizar tiempos y posición");
-            ui.checkbox(&mut s.record_moves, "Grabar movimientos del ratón");
+            ui.label(RichText::new(tr("REPRODUCCIÓN")).font(mono(10.0)).color(c.suave));
+            ui.add(egui::Slider::new(&mut s.speed, 0.25..=4.0).text(tr("velocidad ×")));
+            ui.add(egui::DragValue::new(&mut s.loops).prefix(format!("{} ", tr("vueltas"))).suffix("  (0 = ∞)"));
+            ui.add(egui::DragValue::new(&mut s.pause_between_loops_ms).prefix(format!("{} ", tr("pausa entre vueltas"))).suffix(" ms").speed(10));
+            ui.add(egui::Slider::new(&mut s.countdown_s, 0..=10).text(tr("cuenta atrás s")));
+            ui.checkbox(&mut s.humanize, tr("Humanizar tiempos y posición"));
+            ui.checkbox(&mut s.record_moves, tr("Grabar movimientos del ratón"));
             ui.add_space(10.0);
 
-            ui.label(RichText::new("ATAJO DE LA RUTA").font(mono(10.0)).color(c.suave));
-            let actual = s.hotkey.map(|k| format!("{k:?}")).unwrap_or_else(|| "ninguno".into());
+            ui.label(RichText::new(tr("ATAJO DE LA RUTA")).font(mono(10.0)).color(c.suave));
+            let actual = s.hotkey.map(|k| format!("{k:?}")).unwrap_or_else(|| tr("ninguno").into());
             egui::ComboBox::from_id_salt("hotkey").selected_text(actual).width(140.0).show_ui(ui, |ui| {
-                ui.selectable_value(&mut s.hotkey, None, "ninguno");
+                ui.selectable_value(&mut s.hotkey, None, tr("ninguno"));
                 for k in ROUTE_HOTKEYS {
                     let owner = bot.hotkey_owner(k).filter(|o| *o != route_name);
                     let txt = match owner {
-                        Some(o) => format!("{k:?}  (ahora: {o})"),
+                        Some(o) => format!("{k:?}  ({})", trf("ahora: {}", &[&o])),
                         None => format!("{k:?}"),
                     };
                     ui.selectable_value(&mut s.hotkey, Some(k), txt);
                 }
             });
-            theme::ayuda(ui, "Pulsa esa tecla en cualquier momento (con Replica en espera) para lanzar esta ruta. Se activa al guardar.");
+            theme::ayuda(ui, tr("Pulsa esa tecla en cualquier momento (con Replica en espera) para lanzar esta ruta. Se activa al guardar."));
             ui.add_space(10.0);
 
-            ui.label(RichText::new("VISIÓN").font(mono(10.0)).color(c.suave));
-            ui.checkbox(&mut s.use_anchors, "Verificar la pantalla antes de cada clic");
-            ui.add(egui::Slider::new(&mut s.threshold, 0.5..=1.0).text("similitud"));
-            ui.add(egui::Slider::new(&mut s.search_radius, 0..=400).text("radio px"));
-            ui.add(egui::DragValue::new(&mut s.anchor_timeout_ms).prefix("esperar ancla ").suffix(" ms").speed(10));
-            ui.label(RichText::new("Si no se puede verificar un clic:").font(prop(12.0)).color(c.suave));
-            theme::pildoras(ui, &mut s.on_missing, &[(MissingAnchor::ClickAnyway, "clicar igual"), (MissingAnchor::Stop, "detener")]);
+            ui.label(RichText::new(tr("VISIÓN")).font(mono(10.0)).color(c.suave));
+            ui.checkbox(&mut s.use_anchors, tr("Verificar la pantalla antes de cada clic"));
+            ui.add(egui::Slider::new(&mut s.threshold, 0.5..=1.0).text(tr("similitud")));
+            ui.add(egui::Slider::new(&mut s.search_radius, 0..=400).text(tr("radio px")));
+            ui.add(egui::DragValue::new(&mut s.anchor_timeout_ms).prefix(format!("{} ", tr("esperar ancla"))).suffix(" ms").speed(10));
+            ui.label(RichText::new(tr("Si no se puede verificar un clic:")).font(prop(12.0)).color(c.suave));
+            theme::pildoras(ui, &mut s.on_missing, &[(MissingAnchor::ClickAnyway, tr("clicar igual")), (MissingAnchor::Stop, tr("detener"))]);
         });
     }
 
@@ -862,7 +935,7 @@ impl App {
         ui.horizontal(|ui| {
             ui.label(
                 RichText::new(if name.is_empty() {
-                    "Sin ruta abierta".into()
+                    tr("Sin ruta abierta").into()
                 } else {
                     name.clone()
                 })
@@ -870,12 +943,12 @@ impl App {
                 .color(c.texto),
             );
             ui.label(
-                RichText::new(format!("{n} pasos · {secs:.1} s"))
+                RichText::new(trf("{} pasos · {} s", &[&n, &format!("{secs:.1}")]))
                     .font(mono(12.0))
                     .color(c.suave),
             );
             if dirty {
-                chip(ui, "sin guardar", c.naranja);
+                chip(ui, tr("sin guardar"), c.naranja);
             }
         });
         ui.add_space(6.0);
@@ -883,46 +956,46 @@ impl App {
         ui.add_enabled_ui(editable, |ui| {
             ui.horizontal_wrapped(|ui| {
                 if ui
-                    .add(theme::boton_pri("Guardar", c.acento))
+                    .add(theme::boton_pri(tr("Guardar"), c.acento))
                     .on_hover_text("Ctrl+S")
                     .clicked()
                 {
                     self.guardar();
                 }
                 if ui
-                    .add_enabled(!self.undo.is_empty(), theme::boton_mini("Deshacer"))
+                    .add_enabled(!self.undo.is_empty(), theme::boton_mini(tr("Deshacer")))
                     .on_hover_text("Ctrl+Z")
                     .clicked()
                 {
                     self.deshacer();
                 }
                 if ui
-                    .add_enabled(n > 0, theme::boton_mini("Ejecutar paso"))
-                    .on_hover_text(format!(
+                    .add_enabled(n > 0, theme::boton_mini(tr("Ejecutar paso")))
+                    .on_hover_text(trf(
                         "Ejecuta solo el paso {} y avanza al siguiente (para depurar)",
-                        cursor + 1
+                        &[&(cursor + 1)],
                     ))
                     .clicked()
                 {
                     bot.step_once();
                 }
                 if ui
-                    .add(theme::boton_mini("Simplificar movimientos"))
-                    .on_hover_text("Quita los movimientos de ratón intermedios")
+                    .add(theme::boton_mini(tr("Simplificar movimientos")))
+                    .on_hover_text(tr("Quita los movimientos de ratón intermedios"))
                     .clicked()
                 {
                     let before = n;
                     self.edit(|r| simplify_moves(&mut r.steps));
                     let after = bot.state.lock().unwrap().route.steps.len();
-                    bot.log(format!("Simplificada: {before} → {after} pasos."));
+                    bot.log(trf("Simplificada: {} → {} pasos.", &[&before, &after]));
                 }
             });
             ui.add_space(4.0);
             // Ventana objetivo.
             ui.horizontal(|ui| {
-                ui.label(RichText::new("Ventana").font(prop(12.0)).color(c.suave));
+                ui.label(RichText::new(tr("Ventana")).font(prop(12.0)).color(c.suave));
                 let shown = target.as_ref().map_or(
-                    "pantalla completa (coordenadas absolutas)".into(),
+                    tr("pantalla completa (coordenadas absolutas)").into(),
                     Target::label,
                 );
                 let mut pick: Option<Option<Target>> = None;
@@ -930,13 +1003,13 @@ impl App {
                     .selected_text(shown)
                     .width(360.0)
                     .show_ui(ui, |ui| {
-                        if ui.selectable_label(false, "actualizar lista").clicked()
+                        if ui.selectable_label(false, tr("actualizar lista")).clicked()
                             || self.windows.is_empty()
                         {
                             self.windows = crate::vision::list_windows();
                         }
                         if ui
-                            .selectable_label(target.is_none(), "pantalla completa")
+                            .selectable_label(target.is_none(), tr("pantalla completa"))
                             .clicked()
                         {
                             pick = Some(None);
@@ -959,13 +1032,13 @@ impl App {
                 ui.add(
                     egui::TextEdit::singleline(&mut self.new_text)
                         .desired_width(150.0)
-                        .hint_text("texto (ñ, tildes…)"),
+                        .hint_text(tr("texto (ñ, tildes…)")),
                 );
-                if ui.add(theme::boton_mini("+ Escribir texto")).clicked() {
+                if ui.add(theme::boton_mini(tr("+ Escribir texto"))).clicked() {
                     let t = self.new_text.clone();
                     self.edit(|r| push(r, Action::TypeText { text: t }));
                 }
-                if ui.add(theme::boton_mini("+ Enter")).clicked() {
+                if ui.add(theme::boton_mini(tr("+ Enter"))).clicked() {
                     self.edit(|r| {
                         push(
                             r,
@@ -986,7 +1059,9 @@ impl App {
                         .desired_width(150.0)
                         .hint_text("notepad.exe / steam://…"),
                 );
-                if ui.add(theme::boton_mini("+ Ejecutar programa")).clicked()
+                if ui
+                    .add(theme::boton_mini(tr("+ Ejecutar programa")))
+                    .clicked()
                     && !self.new_cmd.trim().is_empty()
                 {
                     let cmd = self.new_cmd.clone();
@@ -1003,7 +1078,7 @@ impl App {
                         .suffix(" ms")
                         .speed(10),
                 );
-                if ui.add(theme::boton_mini("+ Esperar")).clicked() {
+                if ui.add(theme::boton_mini(tr("+ Esperar"))).clicked() {
                     let ms = self.new_wait;
                     self.edit(|r| push(r, Action::Wait { ms }));
                 }
@@ -1023,32 +1098,32 @@ impl App {
                 .corner_radius(CornerRadius::same(8))
                 .inner_margin(Margin::symmetric(12, 8))
                 .show(ui, |ui| {
-                    ui.label(RichText::new("⚠ Esta ruta ejecuta programas en tu equipo:").font(titulo(13.0)).color(c.rojo));
+                    ui.label(RichText::new(tr("⚠ Esta ruta ejecuta programas en tu equipo:")).font(titulo(13.0)).color(c.rojo));
                     for cmd in &commands {
                         ui.label(RichText::new(format!("   {cmd}")).font(mono(12.0)).color(c.texto));
                     }
                     ui.set_width(ui.available_width());
-                    theme::ayuda(ui, "Permítelo solo si confías en quien te pasó la ruta. Se recuerda hasta que cambien los comandos.");
+                    theme::ayuda(ui, tr("Permítelo solo si confías en quien te pasó la ruta. Se recuerda hasta que cambien los comandos."));
                     ui.add_space(4.0);
-                    if ui.add(theme::boton_pri("Permitir", c.rojo)).clicked() {
+                    if ui.add(theme::boton_pri(tr("Permitir"), c.rojo)).clicked() {
                         let mut st = bot.state.lock().unwrap();
                         let r = st.route.clone();
                         st.config.trust(&r);
                         drop(st);
                         bot.save_config();
-                        bot.log("Programas de la ruta permitidos.");
+                        bot.log(tr("Programas de la ruta permitidos."));
                     }
                 });
         }
         ui.add_space(8.0);
-        theme::encabezado_panel(ui, "Secuencia");
+        theme::encabezado_panel(ui, tr("Secuencia"));
 
         if n == 0 {
             theme::panel_vacio(
                 ui,
                 "grabar",
-                "Sin pasos",
-                "Pulsa F9 en el juego, haz la tarea y pulsa F9 otra vez.",
+                tr("Sin pasos"),
+                tr("Pulsa F9 en el juego, haz la tarea y pulsa F9 otra vez."),
             );
             return;
         }
@@ -1090,13 +1165,15 @@ impl App {
                                     if es_cursor { c.acento } else { c.medio },
                                 );
                                 if resp
-                                    .on_hover_text("Marcar como siguiente paso de «Ejecutar paso»")
+                                    .on_hover_text(tr(
+                                        "Marcar como siguiente paso de «Ejecutar paso»",
+                                    ))
                                     .clicked()
                                 {
                                     nuevo_cursor = Some(i);
                                 }
                                 let (r, _) =
-                                    ui.allocate_exact_size(Vec2::new(46.0, 20.0), Sense::hover());
+                                    ui.allocate_exact_size(Vec2::new(74.0, 20.0), Sense::hover());
                                 ui.painter().text(
                                     r.left_center(),
                                     Align2::LEFT_CENTER,
@@ -1134,7 +1211,7 @@ impl App {
                                             edited |= ui
                                                 .add(
                                                     egui::DragValue::new(ms)
-                                                        .prefix("esperar ")
+                                                        .prefix(format!("{} ", tr("esperar")))
                                                         .suffix(" ms")
                                                         .speed(10),
                                                 )
@@ -1152,9 +1229,9 @@ impl App {
                                             if let Some(tex) = self.anchor_texture(ctx, path) {
                                                 r.on_hover_ui(|ui| {
                                                     ui.label(
-                                                        RichText::new(
+                                                        RichText::new(tr(
                                                             "Lo que Replica buscará en pantalla",
-                                                        )
+                                                        ))
                                                         .font(prop(11.5))
                                                         .color(c.suave),
                                                     );
@@ -1181,7 +1258,7 @@ impl App {
                                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                                         if ui
                                             .add(theme::boton_mini("×"))
-                                            .on_hover_text("Borrar paso")
+                                            .on_hover_text(tr("Borrar paso"))
                                             .clicked()
                                         {
                                             ediciones.push(Edicion::Borrar(i));
@@ -1189,7 +1266,7 @@ impl App {
                                         if i > 0
                                             && ui
                                                 .add(theme::boton_mini("↑"))
-                                                .on_hover_text("Subir paso")
+                                                .on_hover_text(tr("Subir paso"))
                                                 .clicked()
                                         {
                                             ediciones.push(Edicion::Subir(i));
@@ -1233,49 +1310,51 @@ impl App {
         theme::titulo_vista(
             ui,
             "reloj",
-            "Programador",
-            "Lanza rutas solas a una hora o cada X minutos. Replica tiene que estar abierta (o en la bandeja).",
+            tr("Programador"),
+            tr(
+                "Lanza rutas solas a una hora o cada X minutos. Replica tiene que estar abierta (o en la bandeja).",
+            ),
         );
         ui.columns(2, |cols| {
             let ui = &mut cols[0];
-            theme::tarjeta(ui, "Nueva programación", |ui| {
+            theme::tarjeta(ui, tr("Nueva programación"), |ui| {
                 if self.f_route.is_empty() {
                     self.f_route = self.routes.first().cloned().unwrap_or_default();
                 }
-                ui.label(RichText::new("Ruta").font(prop(12.0)).color(c.suave));
+                ui.label(RichText::new(tr("Ruta")).font(prop(12.0)).color(c.suave));
                 egui::ComboBox::from_id_salt("f_route").selected_text(self.f_route.clone()).width(240.0).show_ui(ui, |ui| {
                     for r in &self.routes {
                         ui.selectable_value(&mut self.f_route, r.clone(), r);
                     }
                 });
                 ui.add_space(6.0);
-                ui.label(RichText::new("Cuándo").font(prop(12.0)).color(c.suave));
-                theme::pildoras(ui, &mut self.f_daily, &[(true, "Cada día a una hora"), (false, "Cada X minutos")]);
+                ui.label(RichText::new(tr("Cuándo")).font(prop(12.0)).color(c.suave));
+                theme::pildoras(ui, &mut self.f_daily, &[(true, tr("Cada día a una hora")), (false, tr("Cada X minutos"))]);
                 ui.horizontal(|ui| {
                     if self.f_daily {
-                        ui.add(egui::DragValue::new(&mut self.f_hour).range(0..=23).prefix("hora "));
+                        ui.add(egui::DragValue::new(&mut self.f_hour).range(0..=23).prefix(format!("{} ", tr("hora"))));
                         ui.add(egui::DragValue::new(&mut self.f_min).range(0..=59).prefix("min "));
                     } else {
-                        ui.add(egui::DragValue::new(&mut self.f_every).range(1..=1440).prefix("cada ").suffix(" min"));
+                        ui.add(egui::DragValue::new(&mut self.f_every).range(1..=1440).prefix(format!("{} ", tr("cada"))).suffix(" min"));
                     }
                 });
                 ui.add_space(10.0);
-                if ui.add_enabled(!self.f_route.is_empty(), theme::boton_pri("Añadir", c.acento)).clicked() {
+                if ui.add_enabled(!self.f_route.is_empty(), theme::boton_pri(tr("Añadir"), c.acento)).clicked() {
                     let when = if self.f_daily { When::Daily { hour: self.f_hour, minute: self.f_min } } else { When::Every { minutes: self.f_every } };
                     let mut s = Schedule { route: self.f_route.clone(), when, enabled: true, last: None };
                     s.arm(chrono::Local::now());
-                    bot.log(format!("Programada '{}' {}.", s.route, s.label()));
+                    bot.log(trf("Programada '{}' {}.", &[&s.route, &s.label()]));
                     bot.state.lock().unwrap().config.schedules.push(s);
                     bot.save_config();
                 }
                 ui.add_space(6.0);
-                theme::ayuda(ui, "Si a esa hora Replica está ocupada (grabando o reproduciendo), esa vez se salta. Las rutas con programas solo se lanzan si ya los permitiste.");
+                theme::ayuda(ui, tr("Si a esa hora Replica está ocupada (grabando o reproduciendo), esa vez se salta. Las rutas con programas solo se lanzan si ya los permitiste."));
             });
             let ui = &mut cols[1];
-            theme::tarjeta(ui, "Programaciones", |ui| {
+            theme::tarjeta(ui, tr("Programaciones"), |ui| {
                 let mut st = bot.state.lock().unwrap();
                 if st.config.schedules.is_empty() {
-                    theme::ayuda(ui, "Ninguna todavía.");
+                    theme::ayuda(ui, tr("Ninguna todavía."));
                 }
                 let mut borrar = None;
                 let mut cambio = false;
@@ -1290,11 +1369,11 @@ impl App {
                             }
                             ui.vertical(|ui| {
                                 ui.label(RichText::new(&s.route).font(titulo(13.5)).color(if s.enabled { c.texto } else { c.medio }));
-                                let ult = s.last.map(|l| format!(" · última {}", l.format("%d/%m %H:%M"))).unwrap_or_default();
+                                let ult = s.last.map(|l| format!(" · {}", trf("última {}", &[&l.format("%d/%m %H:%M")]))).unwrap_or_default();
                                 ui.label(RichText::new(format!("{}{ult}", s.label())).font(prop(11.5)).color(c.suave));
                             });
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                if ui.add(theme::boton_mini("×")).on_hover_text("Quitar").clicked() {
+                                if ui.add(theme::boton_mini("×")).on_hover_text(tr("Quitar")).clicked() {
                                     borrar = Some(i);
                                 }
                             });
@@ -1319,8 +1398,8 @@ impl App {
         theme::titulo_vista(
             ui,
             "registro",
-            "Registro",
-            "Todo lo que ha hecho Replica en esta sesión.",
+            tr("Registro"),
+            tr("Todo lo que ha hecho Replica en esta sesión."),
         );
         let log = self.bot.state.lock().unwrap().log.clone();
         card().show(ui, |ui| {
@@ -1330,19 +1409,11 @@ impl App {
                 .auto_shrink([false, false])
                 .show_rows(ui, 18.0, log.len(), |ui, range| {
                     for line in log.range(range) {
-                        let low = line.to_lowercase();
-                        let col = if low.contains("error")
-                            || low.contains("no se pudo")
-                            || line.starts_with('×')
-                        {
+                        let col = if line.starts_with('×') {
                             c.rojo
                         } else if line.starts_with('✔') || line.starts_with('▶') {
                             c.verde
-                        } else if line.starts_with('●')
-                            || line.starts_with('■')
-                            || line.starts_with("En pausa")
-                            || low.contains("ancla")
-                        {
+                        } else if line.starts_with('●') || line.starts_with('■') {
                             c.naranja
                         } else {
                             c.suave
@@ -1362,17 +1433,29 @@ impl App {
         theme::titulo_vista(
             ui,
             "engranaje",
-            "Ajustes",
-            "Apariencia y comportamiento de la ventana.",
+            tr("Ajustes"),
+            tr("Apariencia y comportamiento de la ventana."),
         );
         ui.set_max_width(680.0);
-        theme::tarjeta(ui, "Apariencia", |ui| {
-            ui.label(RichText::new("Máscara").font(prop(12.0)).color(c.suave));
+        theme::tarjeta(ui, tr("Idioma"), |ui| {
+            let mut code = i18n::codigo();
+            let ops: Vec<(&str, &str)> = i18n::IDIOMAS.to_vec();
+            if theme::pildoras(ui, &mut code, &ops) {
+                self.cambiar_idioma(ctx, code);
+            }
+            theme::ayuda(
+                ui,
+                tr("Chino, japonés y coreano usan la fuente que ya trae el sistema."),
+            );
+        });
+        ui.add_space(10.0);
+        theme::tarjeta(ui, tr("Apariencia"), |ui| {
+            ui.label(RichText::new(tr("Máscara")).font(prop(12.0)).color(c.suave));
             let mut t = theme::tema();
             let ops: Vec<(u8, &str)> = theme::MASCARAS
                 .iter()
                 .enumerate()
-                .map(|(i, (n, _))| (i as u8, *n))
+                .map(|(i, _)| (i as u8, NOMBRES_MASCARA[i]()))
                 .collect();
             if theme::pildoras(ui, &mut t, &ops) {
                 theme::set_tema(ctx, t);
@@ -1381,11 +1464,11 @@ impl App {
             }
         });
         ui.add_space(10.0);
-        theme::tarjeta(ui, "Bandeja del sistema", |ui| {
+        theme::tarjeta(ui, tr("Bandeja del sistema"), |ui| {
             if cfg!(windows) {
                 let mut tray = !bot.state.lock().unwrap().config.no_tray;
                 if ui
-                    .checkbox(&mut tray, "Al cerrar la ventana, seguir en la bandeja")
+                    .checkbox(&mut tray, tr("Al cerrar la ventana, seguir en la bandeja"))
                     .changed()
                 {
                     bot.state.lock().unwrap().config.no_tray = !tray;
@@ -1393,17 +1476,19 @@ impl App {
                 }
                 theme::ayuda(
                     ui,
-                    "Así los atajos F1–F8 y el programador siguen funcionando. Para salir del todo: clic derecho en el icono → Salir.",
+                    tr(
+                        "Así los atajos F1–F8 y el programador siguen funcionando. Para salir del todo: clic derecho en el icono → Salir.",
+                    ),
                 );
             } else {
                 theme::ayuda(
                     ui,
-                    "La bandeja del sistema solo está disponible en Windows.",
+                    tr("La bandeja del sistema solo está disponible en Windows."),
                 );
             }
         });
         ui.add_space(10.0);
-        theme::tarjeta(ui, "Acerca de", |ui| {
+        theme::tarjeta(ui, tr("Acerca de"), |ui| {
             ui.label(
                 RichText::new(format!("Replica v{}", env!("CARGO_PKG_VERSION")))
                     .font(prop(13.0))
@@ -1415,7 +1500,7 @@ impl App {
             );
             theme::ayuda(
                 ui,
-                "Los datos (rutas y replica.json) se guardan junto al ejecutable: es portable.",
+                tr("Los datos (rutas y replica.json) se guardan junto al ejecutable: es portable."),
             );
         });
     }
@@ -1425,13 +1510,13 @@ impl App {
 fn tag(a: &Action) -> (&'static str, Color32) {
     let c = pal();
     match a {
-        Action::MouseMove { .. } => ("MOV", c.medio),
-        Action::ButtonDown { .. } | Action::ButtonUp { .. } => ("CLIC", c.acento),
-        Action::Wheel { .. } => ("RUEDA", c.acento),
-        Action::KeyDown { .. } | Action::KeyUp { .. } => ("TECLA", c.naranja),
-        Action::TypeText { .. } => ("TEXTO", c.verde),
-        Action::RunCommand { .. } => ("EXEC", c.rojo),
-        Action::Wait { .. } => ("ESPERA", c.suave),
+        Action::MouseMove { .. } => (tr("MOV"), c.medio),
+        Action::ButtonDown { .. } | Action::ButtonUp { .. } => (tr("CLIC"), c.acento),
+        Action::Wheel { .. } => (tr("RUEDA"), c.acento),
+        Action::KeyDown { .. } | Action::KeyUp { .. } => (tr("TECLA"), c.naranja),
+        Action::TypeText { .. } => (tr("TEXTO"), c.verde),
+        Action::RunCommand { .. } => (tr("EXEC"), c.rojo),
+        Action::Wait { .. } => (tr("ESPERA"), c.suave),
     }
 }
 

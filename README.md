@@ -21,6 +21,18 @@ tamaño o el juego todavía está cargando.
 - **Humanización**: pequeñas variaciones aleatorias de tiempo (±15 %) y posición (±2 px).
 - **Editor de pasos**: cambia retardos, borra, reordena y añade pasos a mano:
   escribir texto, pulsar Enter, ejecutar programas y esperas.
+- **Control de reproducción**: pausa y sigue con `F11` (suelta las teclas mantenidas y las vuelve a
+  pulsar al seguir), ejecuta un solo paso para depurar, cuenta atrás antes de empezar y barra de
+  progreso de la vuelta.
+- **Ajustes por ruta**: cada ruta guarda su velocidad, vueltas, cuenta atrás, política visual y atajo.
+  Deshacer (`Ctrl+Z`), guardar (`Ctrl+S`) y aviso de cambios sin guardar.
+- **Programador**: lanza una ruta cada día a una hora o cada X minutos.
+- **Atajos por ruta**: asigna `F1`–`F8` a una ruta y lánzala al momento, con el juego en primer plano.
+- **Texto Unicode**: escribe ñ, tildes y cualquier símbolo sin depender de la distribución del teclado.
+- **Bandeja del sistema** (Windows): al cerrar la ventana sigue funcionando con atajos y programador.
+- **10 idiomas**: español, English, 中文, Français, Português, Русский, Deutsch, 日本語, 한국어 e Italiano.
+- **Máscaras visuales**: la interfaz de [CAPAS](https://github.com/AngelazoGit/capas) con sus cinco
+  paletas (Serio, Limpio, Sereno, Neutro y Mando) y «Sodio», la estética original de Replica.
 - **Atajos globales** que funcionan con el juego en primer plano, y **corte de emergencia** que
   suelta todas las teclas y botones pulsados.
 - **Rutas en JSON** legibles y editables a mano.
@@ -66,18 +78,22 @@ sudo apt install libx11-dev libxtst-dev libxi-dev libdbus-1-dev libxkbcommon-x11
 
 ## Uso rápido
 
-1. Abre Replica y escribe un **nombre** para la ruta (panel *RUTAS*).
-2. Ve al juego o programa y pulsa **`F9`**: el indicador pasa a `● REC`.
+1. Abre Replica, ve a **Rutas** y escribe un **nombre** para la próxima grabación.
+2. Ve al juego o programa y pulsa **`F9`**: la insignia de la cabecera se pone roja.
 3. Haz la tarea una vez con normalidad.
 4. Pulsa **`F9`** otra vez: la ruta se guarda en `routes/<nombre>/`.
-5. Ajusta las repeticiones y pulsa **`F10`** para que Replica la repita.
-6. **`F12`** lo para todo en cualquier momento.
+5. Ajusta las vueltas en *Ajustes de la ruta* y pulsa **`F10`** para que Replica la repita
+   (tras la cuenta atrás, para que te dé tiempo a volver al juego).
+6. **`F11`** la pausa y **`F12`** lo para todo en cualquier momento.
 
 | Atajo | Acción |
 |---|---|
 | `F9` | Empezar / terminar la grabación |
 | `F10` | Reproducir / parar la ruta cargada |
+| `F11` | Pausa / seguir (suelta las teclas mantenidas mientras está en pausa) |
 | `F12` | Corte de emergencia: para la ruta y suelta teclas y botones |
+| `F1`–`F8` | Lanza la ruta que tenga asignado ese atajo |
+| `Ctrl+Z` / `Ctrl+S` | Deshacer / guardar en el editor |
 
 Cerrar Replica mientras reproduce también para la ruta y suelta lo que estuviera pulsado.
 `F12` no cierra los programas que la ruta ya haya abierto con *ejecutar programa*.
@@ -100,7 +116,7 @@ En Windows (PowerShell):
 Copy-Item -Recurse examples\routes target\release\routes
 ```
 
-Pulsa **⟳ refrescar** en Replica y aparecerán en la lista.
+Pulsa **Actualizar lista** en Replica y aparecerán.
 
 | Ruta | Qué hace | Para probarla |
 |---|---|---|
@@ -147,6 +163,24 @@ que lo hace, Replica muestra la lista de comandos y no la reproduce hasta que pu
 Hazlo solo con rutas de alguien de confianza: esos comandos se ejecutan con tus permisos.
 Las rutas que grabas o editas tú no lo piden.
 
+### Programador y atajos de ruta
+
+En **Programador** eliges una ruta y cuándo lanzarla: cada día a una hora o cada X minutos.
+En *Ajustes de la ruta* puedes asignarle un atajo de `F1` a `F8`. Si en ese momento Replica está
+ocupada o la ruta abierta tiene cambios sin guardar, esa ejecución se salta (queda en el registro).
+Las rutas con programas solo se lanzan así si ya los permitiste. En Windows, cerrar la ventana deja
+Replica en la bandeja del sistema para que todo siga funcionando (se puede desactivar en Ajustes).
+
+### Idiomas
+
+Replica detecta el idioma del sistema y se puede cambiar en la cabecera o en **Ajustes**. Chino,
+japonés y coreano usan la fuente CJK que ya trae el sistema (Microsoft YaHei, Yu Gothic, Malgun
+Gothic, Noto CJK…), así el ejecutable no pesa decenas de MB más. Árabe e hindi no están: la librería
+de interfaz no da forma a esos alfabetos y se verían con las letras sueltas.
+
+Las traducciones están en [`src/i18n.txt`](src/i18n.txt); el texto en español del código es la
+clave. Un test comprueba que cada texto tiene sus 9 traducciones.
+
 ### Tiempos
 
 La reproducción sigue un reloj absoluto: el tiempo que tarda en simular cada evento no se acumula,
@@ -155,11 +189,15 @@ aparecer), los pasos siguientes no se disparan de golpe.
 
 ## Ajustes
 
+Se guardan con cada ruta (*Rutas → Ajustes de la ruta*).
+
 | Ajuste | Qué hace |
 |---|---|
 | **velocidad ×** | Multiplica la velocidad de reproducción. |
-| **repeticiones** | Número de vueltas; `0` = infinito. |
+| **vueltas** | Número de vueltas; `0` = infinito. |
 | **pausa entre vueltas** | Espera entre una vuelta y la siguiente. |
+| **cuenta atrás** | Segundos antes de empezar, para volver a la ventana del juego. |
+| **atajo de la ruta** | `F1`–`F8` para lanzarla en cualquier momento. |
 | **humanizar** | Variación aleatoria de tiempos y posición de los clics. |
 | **grabar movimientos del ratón** | Si se desactiva, solo se graban los clics (rutas más ligeras). |
 | **verificar pantalla antes de clicar** | Activa la búsqueda de anclas visuales. |
@@ -204,11 +242,14 @@ Cada ruta es una carpeta en `routes/` con un `route.json` y las anclas en PNG:
 | Archivo | Contenido |
 |---|---|
 | [`src/main.rs`](src/main.rs) | Arranque de la app. |
-| [`src/bot.rs`](src/bot.rs) | Escucha global, grabación, reproductor, atajos y humanización. |
+| [`src/bot.rs`](src/bot.rs) | Escucha global, grabación, reproductor (pausa, paso a paso, cuenta atrás), atajos, programador y humanización. |
+| [`src/config.rs`](src/config.rs) | `replica.json`: máscara, idioma, programaciones y rutas permitidas. |
+| [`src/i18n.rs`](src/i18n.rs) · [`src/i18n.txt`](src/i18n.txt) | Idiomas y traducciones. |
+| [`src/tray.rs`](src/tray.rs) | Icono de la bandeja del sistema (Windows). |
 | [`src/vision.rs`](src/vision.rs) | Capturas, búsqueda de recortes y detección de ventanas. |
 | [`src/model.rs`](src/model.rs) | Rutas, pasos, acciones y ventana objetivo (JSON). |
-| [`src/app.rs`](src/app.rs) | Interfaz gráfica (egui). |
-| [`src/theme.rs`](src/theme.rs) | Estética: paleta «Sodio y Ultravioleta» y efectos HUD. |
+| [`src/app.rs`](src/app.rs) | Interfaz: barra lateral, cabecera y las vistas Inicio, Rutas, Programador, Registro y Ajustes. |
+| [`src/theme.rs`](src/theme.rs) | Máscaras visuales, fuentes (Inter + JetBrains Mono) y componentes. |
 | [`examples/drive.rs`](examples/drive.rs) | Simulador de entrada para pruebas de extremo a extremo. |
 | [`examples/routes`](examples/routes) | Rutas de ejemplo. |
 
@@ -264,9 +305,10 @@ cargo run --release --example drive -- play
 
 ## Limitaciones
 
-- **Escribir texto** usa la distribución de teclado US: letras, números y espacios funcionan con
-  cualquier teclado, pero algunos símbolos (`/`, `?`, `:`…) pueden salir distintos con otras
-  distribuciones, y con Bloq Mayús activo se invierten las mayúsculas. En ese caso, graba las teclas.
+- **Escribir texto**: letras, números y espacios se escriben con teclas físicas (los juegos las leen);
+  el resto (símbolos, tildes, ñ…) como Unicode. Algunos juegos ignoran la entrada Unicode: si un
+  símbolo no aparece, graba esas teclas en vez de escribirlas. Con Bloq Mayús activo se invierten
+  las mayúsculas.
 - El reescalado es proporcional al tamaño de la ventana. Si cambias la relación de aspecto
   (16:9 → 4:3) y el juego añade bandas negras, los clics se desplazan; las anclas lo corrigen
   dentro del radio de búsqueda.
@@ -279,6 +321,8 @@ cargo run --release --example drive -- play
 - Replica no comprueba qué ventana tiene el foco. Si cambias de ventana durante la reproducción,
   las teclas van a la ventana activa; usa `F12` o la política `detener`.
 - Algunos juegos con anti-cheat a nivel de kernel ignoran o detectan la entrada simulada.
+
+- El menú de la bandeja del sistema queda en el idioma con el que se abrió Replica.
 
 ## Uso responsable
 

@@ -7,12 +7,19 @@ No necesita instalación. Descomprime la carpeta donde quieras
 Todo se guarda dentro de esta carpeta:
   Replica.exe   el programa
   routes\       tus rutas grabadas (y tres de ejemplo)
+  replica.json  idioma, máscara y programaciones
 Para llevártelo a otro PC, copia la carpeta entera.
 
 ATAJOS
-  F9   empezar / terminar la grabación
-  F10  reproducir / parar la ruta cargada
-  F12  corte de emergencia (suelta todas las teclas)
+  F9     empezar / terminar la grabación
+  F10    reproducir / parar la ruta cargada
+  F11    pausa / seguir
+  F12    corte de emergencia (suelta todas las teclas)
+  F1-F8  lanzar la ruta que tenga ese atajo
+
+IDIOMAS
+  Español, English, 中文, Français, Português, Русский, Deutsch,
+  日本語, 한국어 e Italiano. Se cambia en la cabecera o en Ajustes.
 
 USO RÁPIDO
   1. Escribe un nombre para la ruta en el panel RUTAS.

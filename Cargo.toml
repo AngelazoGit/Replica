@@ -1,6 +1,6 @@
 [package]
 name = "replica"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.95"
 description = "Graba lo que haces con ratón y teclado, mira tu pantalla y lo repite por ti: rutas de farmeo, tareas repetitivas y comandos."
@@ -21,6 +21,7 @@ xcap = "0.0.14"
 mouse_position = "0.1.4"
 enigo = "0.6"
 chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
+sys-locale = "0.3.2"
 
 [target.'cfg(windows)'.dependencies]
 tray-icon = "0.27"

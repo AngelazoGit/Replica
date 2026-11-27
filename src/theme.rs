@@ -157,7 +157,61 @@ pub fn prop(t: f32) -> FontId {
     FontId::proportional(t)
 }
 
-pub fn configurar_estilo(ctx: &egui::Context, tema: u8) {
+/// Fuente CJK del sistema para chino, japonés o coreano: (bytes, índice de la cara).
+/// No se incrusta en el ejecutable (pesaría decenas de MB); se usa la que trae el sistema.
+fn fuente_cjk(code: &str) -> Option<(Vec<u8>, u32)> {
+    let win = std::env::var("WINDIR").unwrap_or_else(|_| "C:\\Windows".into()) + "\\Fonts\\";
+    let propias: &[&str] = match code {
+        "zh" => &["msyh.ttc", "simsun.ttc"],
+        "ja" => &["YuGothM.ttc", "meiryo.ttc", "msgothic.ttc"],
+        _ => &["malgun.ttf", "gulim.ttc"],
+    };
+    let mut rutas: Vec<String> = propias.iter().map(|f| format!("{win}{f}")).collect();
+    rutas.extend(
+        [
+            // macOS
+            "/System/Library/Fonts/PingFang.ttc",
+            "/System/Library/Fonts/Hiragino Sans GB.ttc",
+            "/System/Library/Fonts/AppleSDGothicNeo.ttc",
+            // Linux
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+            "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
+        ]
+        .map(String::from),
+    );
+    rutas
+        .iter()
+        .find_map(|r| std::fs::read(r).ok().map(|b| (b, 0)))
+}
+
+/// Carga las fuentes, con una fuente CJK del sistema detrás si la hay;
+/// devuelve false si el idioma la necesita (chino, japonés, coreano) y no hay ninguna.
+pub fn cargar_fuentes(ctx: &egui::Context, idioma: &str) -> bool {
+    // Siempre que el sistema tenga una, para que «中文», «日本語»… se vean en el selector.
+    let cjk = fuente_cjk(if crate::i18n::es_cjk(idioma) {
+        idioma
+    } else {
+        "zh"
+    });
+    let falta = crate::i18n::es_cjk(idioma) && cjk.is_none();
+    ctx.set_fonts(definiciones(cjk));
+    !falta
+}
+
+pub fn configurar_estilo(ctx: &egui::Context, tema: u8, idioma: &str) {
+    cargar_fuentes(ctx, idioma);
+    TEMA.store(tema.min(MASCARAS.len() as u8 - 1), Ordering::Relaxed);
+    aplicar_visuals(ctx);
+    ctx.global_style_mut(|s| {
+        s.spacing.item_spacing = Vec2::new(6.0, 4.0);
+        s.spacing.button_padding = Vec2::new(10.0, 5.0);
+    });
+}
+
+fn definiciones(cjk: Option<(Vec<u8>, u32)>) -> FontDefinitions {
     // Fuentes embebidas: se ven idénticas en Windows, Linux y macOS.
     const INTER: &[u8] = include_bytes!("../assets/fonts/Inter-Regular.otf");
     const INTER_SB: &[u8] = include_bytes!("../assets/fonts/Inter-SemiBold.otf");
@@ -195,14 +249,20 @@ pub fn configurar_estilo(ctx: &egui::Context, tema: u8) {
     let mut m = vec!["jbmono".to_string()];
     m.extend(resp_mono.iter().cloned());
     f.families.insert(FontFamily::Monospace, m);
-    ctx.set_fonts(f);
-
-    TEMA.store(tema.min(MASCARAS.len() as u8 - 1), Ordering::Relaxed);
-    aplicar_visuals(ctx);
-    ctx.global_style_mut(|s| {
-        s.spacing.item_spacing = Vec2::new(6.0, 4.0);
-        s.spacing.button_padding = Vec2::new(10.0, 5.0);
-    });
+    if let Some((bytes, index)) = cjk {
+        let mut d = FontData::from_owned(bytes);
+        d.index = index;
+        f.font_data.insert("cjk".into(), Arc::new(d));
+        // Detrás de Inter/JetBrains: solo se usa para los caracteres que ellas no tienen.
+        for fam in [
+            FontFamily::Proportional,
+            FontFamily::Monospace,
+            FontFamily::Name("titulo".into()),
+        ] {
+            f.families.entry(fam).or_default().push("cjk".into());
+        }
+    }
+    f
 }
 
 fn aplicar_visuals(ctx: &egui::Context) {

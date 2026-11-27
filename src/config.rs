@@ -13,6 +13,8 @@ pub struct Config {
     /// Índice de la máscara (ver `theme::MASCARAS`).
     pub tema: u8,
     pub schedules: Vec<Schedule>,
+    /// Idioma elegido ("es", "en"…). None = el del sistema.
+    pub lang: Option<String>,
     /// Huellas de rutas cuyos programas el usuario ya permitió (ver `trust_key`).
     pub trusted: Vec<u64>,
     /// Windows: cerrar la ventana sale del todo en vez de quedarse en la bandeja.
@@ -79,8 +81,10 @@ impl Schedule {
 
     pub fn label(&self) -> String {
         match self.when {
-            When::Daily { hour, minute } => format!("cada día a las {hour:02}:{minute:02}"),
-            When::Every { minutes } => format!("cada {minutes} min"),
+            When::Daily { hour, minute } => {
+                crate::i18n::trf("cada día a las {}", &[&format!("{hour:02}:{minute:02}")])
+            }
+            When::Every { minutes } => crate::i18n::trf("cada {} min", &[&minutes]),
         }
     }
 }

@@ -9,8 +9,8 @@ use tray_icon::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIc
 
 /// Crea el icono. Hay que conservar el `TrayIcon` devuelto: al soltarlo desaparece.
 pub fn crear(ctx: &egui::Context, quit: Arc<AtomicBool>) -> anyhow::Result<TrayIcon> {
-    let mostrar = MenuItem::new("Mostrar Replica", true, None);
-    let salir = MenuItem::new("Salir", true, None);
+    let mostrar = MenuItem::new(crate::i18n::tr("Mostrar Replica"), true, None);
+    let salir = MenuItem::new(crate::i18n::tr("Salir"), true, None);
     let menu = Menu::new();
     menu.append_items(&[&mostrar, &PredefinedMenuItem::separator(), &salir])?;
     let (id_mostrar, id_salir) = (mostrar.id().clone(), salir.id().clone());
