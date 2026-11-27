@@ -69,10 +69,11 @@ jobs:
             Sin instalación; las rutas se guardan en `routes\` junto al .exe. Incluye tres rutas de ejemplo.
 
             ## Qué incluye
-            - Grabación de teclado y ratón con F9, reproducción con F10, corte de emergencia con F12.
+            - Grabar (F9), reproducir (F10), pausar (F11) y parar (F12); atajos F1–F8 por ruta.
             - Anclas visuales: busca en pantalla lo que había bajo cada clic antes de clicar.
-            - Rutas independientes de la resolución: se adaptan a la posición y tamaño actuales de la ventana.
-            - Repeticiones, velocidad, humanización y editor de pasos (texto, Enter, ejecutar programas, esperas).
+            - Rutas independientes de la resolución: se adaptan a la posición y tamaño de la ventana.
+            - Ajustes por ruta, deshacer, paso a paso, cuenta atrás y programador (a una hora o cada X minutos).
+            - Texto Unicode, bandeja del sistema, 6 máscaras visuales y 10 idiomas.
 
             Linux y macOS: compilar desde el código (ver README).
 
