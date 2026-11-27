@@ -149,6 +149,12 @@ mod tests {
                                     Some(o) => k.push(o),
                                     None => {}
                                 },
+                                // Un salto de línea real dentro de la cadena: en Windows Git lo
+                                // convierte en \r\n y la clave deja de coincidir. Hay que usar `\n`.
+                                '\n' => panic!(
+                                    "{}: salto de línea real en una cadena de tr(); usa \\n",
+                                    p.display()
+                                ),
                                 _ => k.push(c),
                             }
                         }

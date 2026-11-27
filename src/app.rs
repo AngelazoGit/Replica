@@ -319,10 +319,11 @@ impl eframe::App for App {
             }
         }
 
-        // Cerrar la ventana: a la bandeja si está activada; si hay cambios, preguntar.
-        if ctx.input(|i| i.viewport().close_requested()) && !self.quit.load(Ordering::SeqCst) {
+        // Cerrar la ventana: con bandeja (Windows) solo se oculta; al salir de verdad (sin bandeja,
+        // o «Salir» en la bandeja) con cambios sin guardar, se cancela y se pregunta antes.
+        if ctx.input(|i| i.viewport().close_requested()) {
             let tray = cfg!(windows) && !bot.state.lock().unwrap().config.no_tray;
-            if tray {
+            if tray && !self.quit.load(Ordering::SeqCst) {
                 ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
                 ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
                 bot.log(tr(
@@ -330,14 +331,10 @@ impl eframe::App for App {
                 ));
             } else if dirty {
                 ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+                ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
+                self.quit.store(false, Ordering::SeqCst);
                 self.pendiente = Some(Pendiente::Cerrar);
             }
-        }
-        // «Salir» desde la bandeja con cambios sin guardar: mostrar la ventana y preguntar.
-        if self.quit.load(Ordering::SeqCst) && dirty && self.pendiente.is_none() {
-            self.quit.store(false, Ordering::SeqCst);
-            ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
-            self.pendiente = Some(Pendiente::Cerrar);
         }
 
         let c = pal();
@@ -413,8 +410,9 @@ impl App {
         );
         ui.add_space(2.0);
         ui.label(
-            RichText::new(tr("Graba lo que haces y lo
-repite por ti, mirando la pantalla"))
+            RichText::new(tr(
+                "Graba lo que haces y lo\nrepite por ti, mirando la pantalla",
+            ))
             .font(prop(10.5))
             .color(c.suave),
         );

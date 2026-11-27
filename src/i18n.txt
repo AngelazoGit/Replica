@@ -2445,3 +2445,14 @@ de Schritt {} ausgeführt: {}
 ja ステップ {} を実行しました: {}
 ko {}단계 실행됨: {}
 it Passo {} eseguito: {}
+
+= Guarda o descarta los cambios de la ruta abierta antes de grabar.
+en Save or discard the open route's changes before recording.
+zh 录制前请保存或放弃当前路线的更改。
+fr Enregistrez ou abandonnez les modifications de la route ouverte avant d'enregistrer.
+pt Salve ou descarte as alterações da rota aberta antes de gravar.
+ru Сохраните или отмените изменения открытого маршрута перед записью.
+de Speichere oder verwirf die Änderungen der geöffneten Route vor der Aufnahme.
+ja 記録する前に、開いているルートの変更を保存するか破棄してください。
+ko 녹화하기 전에 열린 경로의 변경 사항을 저장하거나 버리세요.
+it Salva o scarta le modifiche del percorso aperto prima di registrare.

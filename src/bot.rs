@@ -379,6 +379,13 @@ impl Bot {
                 drop(st);
                 self.log(tr("Terminando de guardar la grabación anterior…"));
             }
+            Mode::Idle if st.unsaved => {
+                // Grabar sustituye la ruta abierta: sus cambios sin guardar se perderían.
+                drop(st);
+                self.log(tr(
+                    "Guarda o descarta los cambios de la ruta abierta antes de grabar.",
+                ));
+            }
             Mode::Idle => {
                 // Nunca pisar una ruta existente: nombre, nombre_2, nombre_3…
                 let base = crate::model::sanitize(&st.record_name);
@@ -1404,6 +1411,18 @@ mod tests {
             let _ = tx.send(Player::new(&bot, &r, &cfg).run());
         });
         rx.recv_timeout(Duration::from_secs(3)).ok()
+    }
+
+    #[test]
+    fn record_refuses_with_unsaved_changes() {
+        let bot = Bot::new();
+        bot.state.lock().unwrap().unsaved = true;
+        bot.toggle_record(false);
+        assert_eq!(
+            bot.mode(),
+            Mode::Idle,
+            "F9 no debe pisar una ruta con cambios sin guardar"
+        );
     }
 
     #[test]
