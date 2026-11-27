@@ -59,20 +59,23 @@ pub enum Action {
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Step {
     /// Milisegundos desde el paso anterior.
     pub delay_ms: u64,
     pub action: Action,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct Route {
     pub name: String,
     /// Ventana sobre la que se grabó. Si existe, al reproducir las coordenadas
     /// se reescalan a su posición y tamaño actuales (otra resolución, ventana movida…).
     #[serde(default)]
     pub target: Option<Target>,
+    /// Ajustes con los que se guardó (None en rutas antiguas: se usan los actuales).
+    #[serde(default)]
+    pub settings: Option<Settings>,
     pub steps: Vec<Step>,
 }
 
@@ -85,6 +88,55 @@ pub struct Target {
     pub y: i32,
     pub w: u32,
     pub h: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum MissingAnchor {
+    /// Si el ancla no aparece a tiempo, clica en la posición grabada.
+    ClickAnyway,
+    /// Si el ancla no aparece a tiempo, detiene la ruta (más seguro).
+    Stop,
+}
+
+/// Ajustes de reproducción. Se guardan con cada ruta (`route.json`), así cada ruta
+/// recuerda su velocidad, vueltas, política visual, cuenta atrás y atajo.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Settings {
+    pub speed: f32,
+    /// 0 = infinito.
+    pub loops: u32,
+    pub pause_between_loops_ms: u64,
+    pub humanize: bool,
+    pub use_anchors: bool,
+    pub threshold: f32,
+    pub anchor_timeout_ms: u64,
+    pub search_radius: u32,
+    pub on_missing: MissingAnchor,
+    pub record_moves: bool,
+    /// Segundos de cuenta atrás antes de reproducir (para cambiar a la ventana del juego).
+    pub countdown_s: u32,
+    /// Atajo global que lanza esta ruta directamente (F1–F8).
+    pub hotkey: Option<Key>,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            speed: 1.0,
+            loops: 1,
+            pause_between_loops_ms: 1000,
+            humanize: true,
+            use_anchors: true,
+            threshold: 0.90,
+            anchor_timeout_ms: 5000,
+            search_radius: 120,
+            on_missing: MissingAnchor::ClickAnyway,
+            record_moves: true,
+            countdown_s: 3,
+            hotkey: None,
+        }
+    }
 }
 
 impl Target {

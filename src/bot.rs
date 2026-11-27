@@ -1,7 +1,8 @@
 //! Núcleo del bot: escucha global de ratón/teclado (grabación + atajos),
 //! y reproductor de rutas con verificación visual.
 
-use crate::model::{Action, Route, Step, Target};
+use crate::config::Config;
+use crate::model::{Action, MissingAnchor, Route, Settings, Step, Target};
 use crate::vision;
 use image::RgbaImage;
 use rdev::{Button, EventType, Key};
@@ -14,6 +15,7 @@ use std::time::{Duration, Instant};
 
 pub const HOTKEY_RECORD: Key = Key::F9;
 pub const HOTKEY_PLAY: Key = Key::F10;
+pub const HOTKEY_PAUSE: Key = Key::F11;
 pub const HOTKEY_STOP: Key = Key::F12;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -21,46 +23,6 @@ pub enum Mode {
     Idle,
     Recording,
     Playing,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum MissingAnchor {
-    /// Si el ancla no aparece a tiempo, clica en la posición grabada.
-    ClickAnyway,
-    /// Si el ancla no aparece a tiempo, detiene la ruta (más seguro).
-    Stop,
-}
-
-#[derive(Debug, Clone)]
-pub struct Settings {
-    pub speed: f32,
-    /// 0 = infinito.
-    pub loops: u32,
-    pub pause_between_loops_ms: u64,
-    pub humanize: bool,
-    pub use_anchors: bool,
-    pub threshold: f32,
-    pub anchor_timeout_ms: u64,
-    pub search_radius: u32,
-    pub on_missing: MissingAnchor,
-    pub record_moves: bool,
-}
-
-impl Default for Settings {
-    fn default() -> Self {
-        Self {
-            speed: 1.0,
-            loops: 1,
-            pause_between_loops_ms: 1000,
-            humanize: true,
-            use_anchors: true,
-            threshold: 0.90,
-            anchor_timeout_ms: 5000,
-            search_radius: 120,
-            on_missing: MissingAnchor::ClickAnyway,
-            record_moves: true,
-        }
-    }
 }
 
 pub struct State {
@@ -71,6 +33,14 @@ pub struct State {
     pub record_name: String,
     pub log: VecDeque<String>,
     pub progress: String,
+    pub play: Progress,
+    /// Configuración de la app (máscara, programaciones, rutas permitidas).
+    pub config: Config,
+    /// Siguiente paso de «ejecutar un paso».
+    pub step_cursor: usize,
+    /// La interfaz tiene cambios sin guardar en la ruta abierta (un atajo o el
+    /// programador no deben cargar otra ruta encima).
+    pub unsaved: bool,
     mouse: (f64, f64),
     last_step_at: Instant,
     last_move_at: Instant,
@@ -85,8 +55,48 @@ pub struct State {
     rec_target: Option<Target>,
     /// Anclas de la grabación `rec_id` que no se pudieron guardar (se quitan de la ruta).
     rec_bad_anchors: Vec<String>,
-    /// false si la ruta cargada ejecuta programas y el usuario aún no lo ha permitido.
-    pub commands_ok: bool,
+}
+
+impl State {
+    /// La ruta cargada no ejecuta programas o el usuario ya los permitió.
+    pub fn commands_ok(&self) -> bool {
+        self.config.is_trusted(&self.route)
+    }
+}
+
+/// Teclas que se pueden asignar como atajo de una ruta.
+pub const ROUTE_HOTKEYS: [Key; 8] = [
+    Key::F1,
+    Key::F2,
+    Key::F3,
+    Key::F4,
+    Key::F5,
+    Key::F6,
+    Key::F7,
+    Key::F8,
+];
+
+/// Progreso de la reproducción, para la cabecera y la barra de progreso.
+#[derive(Debug, Clone, Default)]
+pub struct Progress {
+    pub lap: u32,
+    /// 0 = infinitas.
+    pub laps: u32,
+    pub step: usize,
+    pub steps: usize,
+    /// Segundos que faltan de la cuenta atrás (0 = no hay cuenta atrás).
+    pub countdown: u32,
+}
+
+impl Progress {
+    /// Fracción de la vuelta actual (0..1).
+    pub fn frac(&self) -> f32 {
+        if self.steps == 0 {
+            0.0
+        } else {
+            self.step as f32 / self.steps as f32
+        }
+    }
 }
 
 /// Fotograma reciente alrededor del cursor: (imagen, x0, y0) en coordenadas globales.
@@ -108,6 +118,9 @@ pub struct Bot {
     pending: AtomicUsize,
     /// Guardando una grabación (esperando sus anclas): no se puede reproducir ni grabar.
     saving: AtomicBool,
+    paused: AtomicBool,
+    /// Atajo de ruta (F1–F8) → nombre de la ruta.
+    route_hotkeys: Mutex<HashMap<Key, String>>,
 }
 
 impl Bot {
@@ -122,6 +135,10 @@ impl Bot {
                 record_name: "nueva_ruta".into(),
                 log: VecDeque::new(),
                 progress: String::new(),
+                play: Progress::default(),
+                config: Config::load(),
+                step_cursor: 0,
+                unsaved: false,
                 mouse: (0.0, 0.0),
                 last_step_at: Instant::now(),
                 last_move_at: Instant::now(),
@@ -130,7 +147,6 @@ impl Bot {
                 rec_id: 0,
                 rec_target: None,
                 rec_bad_anchors: vec![],
-                commands_ok: true,
             }),
             stop: AtomicBool::new(false),
             repaint: Mutex::new(None),
@@ -138,6 +154,18 @@ impl Bot {
             frame: Mutex::new(None),
             pending: AtomicUsize::new(0),
             saving: AtomicBool::new(false),
+            paused: AtomicBool::new(false),
+            route_hotkeys: Mutex::new(HashMap::new()),
+        });
+        bot.refresh_hotkeys();
+
+        // Programador: cada segundo mira si toca lanzar alguna ruta.
+        let b = bot.clone();
+        thread::spawn(move || {
+            loop {
+                thread::sleep(Duration::from_secs(1));
+                b.tick_schedules(chrono::Local::now());
+            }
         });
 
         // Hilo que guarda anclas visuales sin bloquear la escucha de entrada.
@@ -244,19 +272,30 @@ impl Bot {
     fn on_input(self: &Arc<Self>, ev: EventType) {
         // Atajos globales: funcionan aunque el juego tenga el foco.
         match ev {
-            EventType::KeyPress(k @ (HOTKEY_RECORD | HOTKEY_PLAY | HOTKEY_STOP)) => {
+            EventType::KeyPress(k @ (HOTKEY_RECORD | HOTKEY_PLAY | HOTKEY_PAUSE | HOTKEY_STOP)) => {
                 if self.state.lock().unwrap().hotkey_held.replace(k) == Some(k) {
                     return; // autorrepetición: si no, mantener F9 alterna grabar/parar sin control
                 }
                 return match k {
                     HOTKEY_RECORD => self.toggle_record(false),
                     HOTKEY_PLAY => self.toggle_play(),
+                    HOTKEY_PAUSE => self.toggle_pause(),
                     _ => self.stop_all(),
                 };
             }
-            EventType::KeyRelease(HOTKEY_RECORD | HOTKEY_PLAY | HOTKEY_STOP) => {
+            EventType::KeyRelease(HOTKEY_RECORD | HOTKEY_PLAY | HOTKEY_PAUSE | HOTKEY_STOP) => {
                 self.state.lock().unwrap().hotkey_held = None;
                 return;
+            }
+            // Atajo de una ruta: solo en reposo (grabando, F1–F8 se graban como teclas normales).
+            EventType::KeyPress(k) if self.mode() == Mode::Idle => {
+                let name = self.route_hotkeys.lock().unwrap().get(&k).cloned();
+                if let Some(name) = name {
+                    let bot = self.clone();
+                    // En otro hilo: cargar la ruta no debe bloquear el hook de teclado.
+                    thread::spawn(move || bot.play_named(&name, "atajo"));
+                    return;
+                }
             }
             _ => {}
         }
@@ -366,7 +405,6 @@ impl Bot {
                 st.rec_id += 1;
                 st.rec_target = None;
                 st.rec_bad_anchors.clear();
-                st.commands_ok = true; // lo que graba el propio usuario
                 st.mode = Mode::Recording;
                 st.last_step_at = Instant::now();
                 drop(st);
@@ -411,6 +449,7 @@ impl Bot {
                 std::mem::take(&mut st.rec_bad_anchors),
             );
             finish_route(&mut route, target, &bad);
+            route.settings = Some(st.settings.clone());
             if st.route.name == route.name {
                 // Conserva ediciones hechas en el editor mientras se guardaba.
                 finish_route(&mut st.route, route.target.clone(), &bad);
@@ -429,6 +468,7 @@ impl Bot {
             )),
             Err(e) => self.log(format!("Error guardando ruta: {e}")),
         }
+        self.refresh_hotkeys();
         self.saving.store(false, Ordering::SeqCst);
         self.repaint();
     }
@@ -456,7 +496,7 @@ impl Bot {
                     return self.log("La ruta está vacía: graba o carga una.");
                 }
                 let commands = st.route.commands();
-                if !commands.is_empty() && !st.commands_ok {
+                if !st.commands_ok() {
                     drop(st);
                     return self.log(format!(
                         "Esta ruta ejecuta programas: {}. Revísalos y pulsa «permitir» antes de reproducir.",
@@ -468,29 +508,199 @@ impl Bot {
                 let settings = st.settings.clone();
                 drop(st);
                 self.stop.store(false, Ordering::SeqCst);
+                self.paused.store(false, Ordering::SeqCst);
                 let bot = self.clone();
                 thread::spawn(move || {
-                    bot.log(format!(
-                        "▶ Reproduciendo '{}' (F12 para parar).",
-                        route.name
-                    ));
                     let mut player = Player::new(&bot, &route, &settings);
-                    let result =
-                        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| player.run()));
+                    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        player.countdown(settings.countdown_s)?;
+                        bot.log(format!(
+                            "▶ Reproduciendo '{}' (F11 pausa · F12 para).",
+                            route.name
+                        ));
+                        player.run()
+                    }));
                     player.release_all();
                     match result {
                         Ok(Ok(())) => bot.log("✔ Ruta completada."),
-                        Ok(Err(e)) => bot.log(format!("⏹ {e}")),
-                        Err(_) => bot.log("⏹ Error interno durante la reproducción."),
+                        Ok(Err(e)) => bot.log(format!("× {e}")),
+                        Err(_) => bot.log("× Error interno durante la reproducción."),
                     }
+                    bot.paused.store(false, Ordering::SeqCst);
                     let mut st = bot.state.lock().unwrap_or_else(|e| e.into_inner());
                     st.mode = Mode::Idle;
                     st.progress.clear();
+                    st.play = Progress::default();
                     drop(st);
                     bot.repaint();
                 });
             }
         }
+    }
+
+    /// F11: pausa o reanuda la reproducción en curso.
+    pub fn toggle_pause(self: &Arc<Self>) {
+        if self.mode() != Mode::Playing {
+            return;
+        }
+        let now = !self.paused.fetch_xor(true, Ordering::SeqCst);
+        self.log(if now {
+            "En pausa (F11 para seguir)."
+        } else {
+            "▶ Reanudando."
+        });
+    }
+
+    pub fn is_paused(&self) -> bool {
+        self.paused.load(Ordering::SeqCst)
+    }
+
+    pub fn is_saving(&self) -> bool {
+        self.saving.load(Ordering::SeqCst)
+    }
+
+    /// Carga una ruta guardada como ruta actual (con sus ajustes, si los tiene).
+    pub fn load_route(&self, name: &str) -> anyhow::Result<()> {
+        let r = Route::load(name)?;
+        let mut st = self.state.lock().unwrap();
+        st.record_name = r.name.clone();
+        if let Some(cfg) = &r.settings {
+            st.settings = cfg.clone();
+        }
+        st.route = r;
+        st.step_cursor = 0;
+        Ok(())
+    }
+
+    /// Guarda la ruta actual con los ajustes actuales.
+    pub fn save_route(&self) -> anyhow::Result<()> {
+        let route = {
+            let mut st = self.state.lock().unwrap();
+            if st.route.name.is_empty() {
+                st.route.name = crate::model::sanitize(&st.record_name);
+            }
+            st.route.settings = Some(st.settings.clone());
+            st.route.clone()
+        };
+        route.save()?;
+        self.refresh_hotkeys();
+        Ok(())
+    }
+
+    /// Guarda la configuración de la app (programaciones, máscara, permisos).
+    pub fn save_config(&self) {
+        let cfg = self.state.lock().unwrap().config.clone();
+        if let Err(e) = cfg.save() {
+            self.log(format!("No se pudo guardar la configuración: {e}"));
+        }
+    }
+
+    /// Relee qué ruta tiene asignado cada atajo F1–F8.
+    pub fn refresh_hotkeys(&self) {
+        #[derive(serde::Deserialize)]
+        struct Head {
+            #[serde(default)]
+            settings: Option<Settings>,
+        }
+        let mut map = HashMap::new();
+        for name in Route::list() {
+            let path = Route::dir(&name).join("route.json");
+            let head = std::fs::read_to_string(path)
+                .ok()
+                .and_then(|j| serde_json::from_str::<Head>(&j).ok());
+            if let Some(k) = head.and_then(|h| h.settings).and_then(|s| s.hotkey) {
+                map.insert(k, name);
+            }
+        }
+        *self.route_hotkeys.lock().unwrap() = map;
+    }
+
+    pub fn hotkey_owner(&self, k: Key) -> Option<String> {
+        self.route_hotkeys.lock().unwrap().get(&k).cloned()
+    }
+
+    /// Carga y reproduce una ruta guardada (desde un atajo o el programador).
+    /// Nunca ejecuta programas que el usuario no haya permitido.
+    pub fn play_named(self: &Arc<Self>, name: &str, origin: &str) {
+        if self.mode() != Mode::Idle || self.is_saving() {
+            return self.log(format!(
+                "{origin}: '{name}' no se lanza, Replica está ocupada."
+            ));
+        }
+        if self.state.lock().unwrap().unsaved {
+            return self.log(format!(
+                "{origin}: '{name}' no se lanza: la ruta abierta tiene cambios sin guardar."
+            ));
+        }
+        if let Err(e) = self.load_route(name) {
+            return self.log(format!("{origin}: no se pudo cargar '{name}': {e}"));
+        }
+        if !self.state.lock().unwrap().commands_ok() {
+            return self.log(format!(
+                "{origin}: '{name}' ejecuta programas sin permitir; ábrela y pulsa «permitir»."
+            ));
+        }
+        self.log(format!("{origin}: lanzando '{name}'."));
+        self.toggle_play();
+    }
+
+    /// Mira las programaciones y lanza la primera que toque.
+    pub fn tick_schedules(self: &Arc<Self>, now: chrono::DateTime<chrono::Local>) {
+        let mut due = vec![];
+        {
+            let mut st = self.state.lock().unwrap();
+            for s in st.config.schedules.iter_mut() {
+                if s.is_due(now) {
+                    s.last = Some(now); // marca la ocasión aunque se salte por estar ocupado
+                    due.push(s.route.clone());
+                }
+            }
+        }
+        if due.is_empty() {
+            return;
+        }
+        self.save_config();
+        for name in due {
+            self.play_named(&name, "Programador"); // si coinciden varias, las demás se saltan
+        }
+    }
+
+    /// Ejecuta solo el paso marcado por `step_cursor` y avanza al siguiente.
+    pub fn step_once(self: &Arc<Self>) {
+        let mut st = self.state.lock().unwrap();
+        if st.mode != Mode::Idle || st.route.steps.is_empty() {
+            return;
+        }
+        if !st.commands_ok() {
+            drop(st);
+            return self.log("Esta ruta ejecuta programas: pulsa «permitir» antes.");
+        }
+        let i = st.step_cursor.min(st.route.steps.len() - 1);
+        st.mode = Mode::Playing;
+        let (route, settings) = (st.route.clone(), st.settings.clone());
+        drop(st);
+        self.stop.store(false, Ordering::SeqCst);
+        let bot = self.clone();
+        thread::spawn(move || {
+            let mut player = Player::new(&bot, &route, &settings);
+            let result = player
+                .locate_window(true)
+                .and_then(|_| player.exec(&route.steps[i].action));
+            player.release_all(); // paso a paso no deja nada pulsado entre pasos
+            match result {
+                Ok(()) => bot.log(format!(
+                    "Paso {} ejecutado: {}",
+                    i + 1,
+                    route.steps[i].action.describe()
+                )),
+                Err(e) => bot.log(format!("× Paso {}: {e}", i + 1)),
+            }
+            let mut st = bot.state.lock().unwrap();
+            st.mode = Mode::Idle;
+            st.step_cursor = (i + 1) % route.steps.len();
+            drop(st);
+            bot.repaint();
+        });
     }
 
     pub fn stop_all(self: &Arc<Self>) {
@@ -516,8 +726,8 @@ impl Bot {
         self.stop.load(Ordering::SeqCst)
     }
 
-    fn set_progress(&self, p: String) {
-        self.state.lock().unwrap().progress = p;
+    fn set_progress(&self, play: Progress) {
+        self.state.lock().unwrap().play = play;
         self.repaint();
     }
 }
@@ -665,22 +875,65 @@ impl<'a> Player<'a> {
     }
 
     fn sleep(&mut self, ms: u64) -> anyhow::Result<()> {
-        let end = Instant::now() + self.scaled(ms);
-        self.sleep_until(end)
+        let mut end = Instant::now() + self.scaled(ms);
+        self.sleep_until(&mut end)
+    }
+
+    fn countdown(&mut self, secs: u32) -> anyhow::Result<()> {
+        for left in (1..=secs).rev() {
+            self.bot.set_progress(Progress {
+                countdown: left,
+                ..Default::default()
+            });
+            let mut end = Instant::now() + Duration::from_secs(1);
+            self.sleep_until(&mut end)?;
+        }
+        Ok(())
+    }
+
+    /// En pausa: suelta lo que esté pulsado (si no, el personaje sigue andando), espera,
+    /// y al reanudar lo vuelve a pulsar. Devuelve cuánto duró la pausa.
+    fn hold_while_paused(&mut self) -> anyhow::Result<Duration> {
+        if !self.bot.is_paused() {
+            return Ok(Duration::ZERO);
+        }
+        let t0 = Instant::now();
+        let (keys, buttons) = (self.keys_down.clone(), self.buttons_down.clone());
+        for k in &keys {
+            self.send(EventType::KeyRelease(*k));
+        }
+        for b in &buttons {
+            self.send(EventType::ButtonRelease(*b));
+        }
+        while self.bot.is_paused() {
+            if self.bot.stopped() {
+                anyhow::bail!("Detenido por el usuario.");
+            }
+            thread::sleep(Duration::from_millis(20));
+        }
+        for k in &keys {
+            self.send(EventType::KeyPress(*k));
+        }
+        for b in &buttons {
+            self.send(EventType::ButtonPress(*b));
+        }
+        Ok(t0.elapsed())
     }
 
     /// Espera hasta `end` comprobando F12. Comprueba aunque no haya que esperar:
     /// si no, una ruta de pasos sin retardo nunca vería la parada.
-    fn sleep_until(&self, end: Instant) -> anyhow::Result<()> {
+    /// La pausa alarga `end` lo que dure, para no disparar después los pasos atrasados.
+    fn sleep_until(&mut self, end: &mut Instant) -> anyhow::Result<()> {
         loop {
             if self.bot.stopped() {
                 anyhow::bail!("Detenido por el usuario.");
             }
+            *end += self.hold_while_paused()?;
             let now = Instant::now();
-            if now >= end {
+            if now >= *end {
                 return Ok(());
             }
-            thread::sleep((end - now).min(Duration::from_millis(20)));
+            thread::sleep((*end - now).min(Duration::from_millis(20)));
         }
     }
 
@@ -697,20 +950,18 @@ impl<'a> Player<'a> {
         loop {
             lap += 1;
             self.locate_window(lap == 1)?;
-            let total = if self.cfg.loops == 0 {
-                "∞".to_string()
-            } else {
-                self.cfg.loops.to_string()
-            };
             let mut clock = Instant::now();
+            let steps = self.route.steps.len();
             for (i, step) in self.route.steps.iter().enumerate() {
-                self.bot.set_progress(format!(
-                    "Vuelta {lap}/{total} · paso {}/{}",
-                    i + 1,
-                    self.route.steps.len()
-                ));
+                self.bot.set_progress(Progress {
+                    lap,
+                    laps: self.cfg.loops,
+                    step: i + 1,
+                    steps,
+                    countdown: 0,
+                });
                 clock += self.scaled(step.delay_ms);
-                self.sleep_until(clock)?;
+                self.sleep_until(&mut clock)?;
                 self.exec(&step.action)?;
                 // Reloj absoluto: lo que tarda simular eventos no se acumula como retraso, pero tras
                 // una espera larga (ancla, Wait) no se disparan de golpe los pasos atrasados.
@@ -777,6 +1028,15 @@ impl<'a> Player<'a> {
                 for c in text.chars() {
                     if self.bot.stopped() {
                         anyhow::bail!("Detenido por el usuario.");
+                    }
+                    // Letras, números, espacio y Enter con teclas físicas (los juegos leen teclas);
+                    // símbolos, tildes, ñ… como Unicode, que no depende de la distribución del teclado.
+                    if !(c.is_ascii_alphanumeric() || matches!(c, ' ' | '\n' | '\t')) {
+                        if let Err(e) = type_unicode(c) {
+                            self.bot.log(format!("No se pudo escribir {c:?}: {e}"));
+                        }
+                        thread::sleep(Duration::from_millis(15));
+                        continue;
                     }
                     match char_to_key(c) {
                         Some((key, shift)) => {
@@ -943,6 +1203,15 @@ impl<'a> Player<'a> {
     }
 }
 
+/// Escribe un carácter como Unicode (SendInput en Windows, XTest con remapeo en X11, CGEvent en macOS).
+fn type_unicode(c: char) -> anyhow::Result<()> {
+    use enigo::{Enigo, Keyboard};
+    let mut enigo = Enigo::new(&enigo::Settings::default()).map_err(|e| anyhow::anyhow!("{e}"))?;
+    enigo
+        .text(&c.to_string())
+        .map_err(|e| anyhow::anyhow!("{e}"))
+}
+
 /// Mapeo carácter → tecla física (distribución US). Devuelve (tecla, necesita Shift).
 pub fn char_to_key(c: char) -> Option<(Key, bool)> {
     use Key::*;
@@ -1069,6 +1338,7 @@ mod tests {
         Route {
             name: "__test_inexistente__".into(),
             target,
+            settings: None,
             steps: steps
                 .into_iter()
                 .map(|action| Step {

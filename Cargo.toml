@@ -2,7 +2,7 @@
 name = "replica"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.95"
 description = "Graba lo que haces con ratón y teclado, mira tu pantalla y lo repite por ti: rutas de farmeo, tareas repetitivas y comandos."
 license = "MIT"
 repository = "https://github.com/AngelazoGit/Replica"
@@ -12,13 +12,18 @@ categories = ["gui", "accessibility"]
 
 [dependencies]
 rdev = { version = "0.5", features = ["serialize"] }
-eframe = { version = "0.29", default-features = false, features = ["default_fonts", "glow", "x11"] }
+eframe = { version = "0.37", default-features = false, features = ["default_fonts", "glow", "x11"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"
 xcap = "0.0.14"
 mouse_position = "0.1.4"
+enigo = "0.6"
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
+
+[target.'cfg(windows)'.dependencies]
+tray-icon = "0.27"
 
 [profile.release]
 strip = true # sin símbolos de depuración: el .exe pasa de ~25 MB a menos de la mitad
